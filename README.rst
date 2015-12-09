@@ -11,7 +11,7 @@ data collection.
 
 Directories and files are specified as zProperties.
 
-This version of the ZenPack uses zenpacklib and is version 1.0 in the master git branch.
+This version of the ZenPack uses zenpacklib and is version 1.0.0 in the master git branch.
 
 zenpacklib usage
 ----------------
@@ -37,8 +37,10 @@ zenpacklib creates */Server/Linux/DirFile* with:
 
 * zPythonClass: ZenPacks.community.DirFile.DirFileDevice
 * zDeviceTemplates:
+
   - Disk_free_df
   - Device
+
 * zCollectorPlugins: ['zenoss.snmp.NewDeviceMap', 'zenoss.snmp.DeviceMap', 'HPDeviceMap', 'DellDeviceMap', 'zenoss.snmp.InterfaceMap', 'zenoss.snmp.RouteMap', 'zenoss.snmp.IpServiceMap', 'zenoss.snmp.HRFileSystemMap', 'zenoss.snmp.HRSWRunMap', 'zenoss.snmp.CpuMap', 'HPCPUMap', 'DellCPUMap', 'DellPCIMap', 'zenoss.snmp.SnmpV3EngineIdMap', 'community.cmd.DirFileDeviceMap', 'community.cmd.DirFileMap']
 * Several templates are created accessible by this class
 
@@ -98,7 +100,9 @@ Monitoring Templates
     - FileLsDiskUsed - uses ls on remote target and employs ZenPack parser to allocate correct data to file components, with graph
     - FileTest1WithoutCount - runs remote file_stats.sh to gather count of lines containing "without" or "test 1", 
       search string hard-coded, with graph
+
   - FileXml (shipped in objects.xml)    
+
     - without - runs remote file_stats_param.sh through a Zenapck-delivered datasource, *DirFileDataSource*, to gather 
       count of lines containing "without", where search string is supplied in template GUI, with graph
     - test_1 - runs remote file_stats_param.sh through a Zenapck-delivered datasource, *DirFileDataSource*, to gather 
@@ -195,6 +199,14 @@ This ZenPack only requires very basic Unix commands on the traget devices.
 Limitations and Troubleshooting
 ===============================
 
+There is an issue sometimes with zenpacklib supporting templates with custom datasources.  
+For this reason, the test_1 and without datasources and their associated graphs are shipped in
+a separate FileXml template in objects.xml.  Attempts to ship them specified in zenpack.yaml
+appears to result in an empty CommandTemplate field, even though ZMI shows the correct entry.
+The result is that data is not collected and events are generated from zenhub complaining about
+an incorrect TALES expression.
+
+The File object class in zenpack.yaml has monitoring_templates set to [File, FileXml].
 
 
 Change History
@@ -211,7 +223,7 @@ See the screenshots directory.
 
 .. External References Below. Nothing Below This Line Should Be Rendered
 
-.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/zenpacklib/dist/ZenPacks.community.DirFile-1.0-py2.7.egg?raw=true
+.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/zenpacklib/dist/ZenPacks.community.DirFile-1.0.0-py2.7.egg?raw=true
 
 Acknowledgements
 ================
