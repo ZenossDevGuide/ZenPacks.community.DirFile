@@ -223,7 +223,7 @@ See the screenshots directory.
 
 .. External References Below. Nothing Below This Line Should Be Rendered
 
-.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/zenpacklib/dist/ZenPacks.community.DirFile-1.0.0-py2.7.egg?raw=true
+.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/master/dist/ZenPacks.community.DirFile-1.0.0-py2.7.egg?raw=true
 
 Acknowledgements
 ================
