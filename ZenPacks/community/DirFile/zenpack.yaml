@@ -1,0 +1,241 @@
+name: ZenPacks.community.DirFile
+
+zProperties:
+  DEFAULT:
+    category: DirFile
+
+  zMonitorDir1:
+    type: string
+  zMonitorDir2:
+    type: string
+  zMonitorDir3:
+    type: string
+
+  zMonitorDir1File:
+    type: string
+  zMonitorDir2File:
+    type: string
+  zMonitorDir3File:
+    type: string
+
+device_classes:
+  /Server/Linux/DirFile:
+    remove: False     # False is default - specified for clarity
+    zProperties:
+      zPythonClass: ZenPacks.community.DirFile.DirFileDevice
+      zDeviceTemplates: 
+        - Disk_free_df
+        - Device
+      zCollectorPlugins: ['zenoss.snmp.NewDeviceMap', 'zenoss.snmp.DeviceMap', 'HPDeviceMap', 'DellDeviceMap', 'zenoss.snmp.InterfaceMap', 'zenoss.snmp.RouteMap', 'zenoss.snmp.IpServiceMap', 'zenoss.snmp.HRFileSystemMap', 'zenoss.snmp.HRSWRunMap', 'zenoss.snmp.CpuMap', 'HPCPUMap', 'DellCPUMap', 'DellPCIMap', 'zenoss.snmp.SnmpV3EngineIdMap', 'community.cmd.DirFileMap']
+    templates:
+      Dir:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          DirDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b -d 0 ${here/dirName} | cut -f 1
+            cycletime: 60
+            datapoints:
+              disk_used: GAUGE
+            usessh: true
+        graphs:
+          Disk used:
+            height: 100
+            width: 500
+            units: Bytes
+            graphpoints:
+              disk_used:
+                dpName: DirDiskUsed_disk_used
+      Disk_free_df:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          df:
+            type: COMMAND
+            component: /
+            commandTemplate: df_root.sh
+            cycletime: 60
+            datapoints:
+              df_root: {}
+            usessh: true
+        graphs:
+          root df:
+            units: Bytes
+            graphpoints:
+              df_root:
+                dpName: df_df_root
+      File:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          FileDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b ${here/fileDirName}/${here/fileName}
+              | cut -f 1
+            cycletime: 60
+            datapoints:
+              diskUsed: GAUGE
+            usessh: true
+          FileLsDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /bin/ls -l ${here/fileDirName}
+            cycletime: 60
+            datapoints:
+              lsBytesUsed: GAUGE
+            usessh: true
+            parser: ZenPacks.community.DirFile.parsers.File
+          FileTest1WithoutCount:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: file_stats.sh "${here/fileDirName}/${here/fileName}"
+            cycletime: 60
+            datapoints:
+              test_1: GAUGE
+              without: GAUGE
+            usessh: true
+          #test_1:
+          #  type: DirFileDataSource
+          #  commandTemplate: file_stats_param.sh ${here/fileDirName}/${here/fileName}
+          #  cycletime: 60
+          #  datapoints:
+          #    matches: GAUGE
+          #  stringToFind: test 1
+          #without:
+          #  type: DirFileDataSource
+          #  severity: err
+          #  commandTemplate: file_stats_param.sh ${here/fileDirName}/${here/fileName}
+          #  cycletime: 60
+          #  datapoints:
+          #    matches: GAUGE
+          #  stringToFind: without
+        graphs:
+          Disk Used:
+            height: 100
+            width: 500
+            units: Bytes
+            graphpoints:
+              diskUsed:
+                dpName: FileDiskUsed_diskUsed
+          ls Disk Used:
+            height: 100
+            width: 500
+            units: Bytes
+            graphpoints:
+              lsBytesUsed:
+                dpName: FileLsDiskUsed_lsBytesUsed
+          test 1 count:
+            height: 100
+            width: 500
+            units: Matches
+            graphpoints:
+              test_1:
+                dpName: FileTest1WithoutCount_test_1
+          #test_1 by datasource:
+          #  height: 100
+          #  width: 500
+          #  units: Matches
+          #  graphpoints:
+          #    test_1_matches:
+          #      dpName: test_1_matches
+                #lineWidth: 3
+                #color: ea48e8
+          #without by datasource:
+          #  height: 100
+          #  width: 500
+          #  units: Matches
+          #  graphpoints:
+          #    matches:
+          #      dpName: without_matches
+          without count:
+            height: 100
+            width: 500
+            units: Matches
+            graphpoints:
+              without:
+                dpName: FileTest1WithoutCount_without
+
+classes:
+  DEFAULTS:
+    base: [zenpacklib.Component]
+
+  DirFileDevice:
+    base: [zenpacklib.Device]
+    meta_type: DirFileDevice  # Will default to this but in for completeness
+    label: DirFile Host
+
+    relationships:
+      dirs:
+        label: dirs
+        display: false
+
+  Dir:
+    label: Dir # NB It is label, with spaces removed, that is used to match a component template
+    meta_type: Dir   # Will default to this but in for completeness
+    label_width: 150   # This controls the column width for Dir in the Files component display
+    order: 60   # before file
+    auto_expand_column: dirName
+    monitoring_templates: [Dir]  # will default to Dir but explicit for clarity
+
+    properties:
+      dirName:
+        type: string
+        label: Directory name
+        short_label: DirName
+        label_width: 300
+        order: 3.1
+
+    relationships:
+      dirFileDevice:
+        label: dirFileDevice
+        display: true
+      files:
+        label: files
+        display: true
+  File:
+    label: File  # NB It is label, with spaces removed, that is used to match a component template
+    meta_type: File   # Will default to this but in for completeness
+    order: 70   # after dir
+    auto_expand_column: fileName
+    # monitoring_templates defaults to File. Also need FileXml, shipped in objects.xml, to
+    #   circumnavigate issue whereby custom datasource CommandTemplate appears blank when
+    #   shipped in zenpack.yaml
+    monitoring_templates: [File, FileXml]  
+
+    properties:
+      fileName:
+        type: string
+        label: File name
+        short_label: FileName
+        label_width: 250
+        order: 3.1
+
+      fileDirName:
+        type: string
+        label: File Dir name
+        short_label: FileDirName
+        label_width: 200
+        order: 3.2
+
+      fileRegex:
+        type: string
+        label: File Regex
+        short_label: FileRegex
+        label_width: 150
+        order: 3.3
+
+    relationships:
+      dir:
+        label: dir  # label for dir in files component panel taken for Dir label, not from here
+        grid_display: false  # this does control whether Dir displayed in files component panel
+        details_display: true
+        label_width: 20  # this does NOT control width of Dir in files component panel
+        order: 3.3 # this seems to have no effect on order in the files component display
+
+class_relationships:
+  - DirFileDevice(dirs) 1:MC Dir(dirFileDevice)
+  - Dir(files) 1:MC File(dir)
+

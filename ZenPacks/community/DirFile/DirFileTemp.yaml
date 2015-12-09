@@ -1,0 +1,130 @@
+name: ZenPacks.community.DirFile
+device_classes: !ZenPackSpec
+  /Server/Linux/DirFile:
+    templates:
+      Dir:
+        description: ''
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          DirDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b -d 0 ${here/dirName} | cut -f 1
+            cycletime: 60
+            datapoints:
+              disk_used: GAUGE
+            usessh: true
+        graphs:
+          Disk used:
+            height: 100
+            width: 500
+            units: Bytes
+            graphpoints:
+              disk_used:
+                dpName: DirDiskUsed_disk_used
+      Disk_free_df:
+        description: ''
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          df:
+            type: COMMAND
+            component: /
+            commandTemplate: df_root.sh
+            cycletime: 60
+            datapoints:
+              df_root: {}
+            usessh: true
+        graphs:
+          root df:
+            units: Bytes
+            graphpoints:
+              df_root:
+                dpName: df_df_root
+      File:
+        description: ''
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          FileDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b ${here/fileDirName}/${here/fileName}
+              | cut -f 1
+            cycletime: 60
+            datapoints:
+              diskUsed: GAUGE
+            usessh: true
+          FileLsDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /bin/ls -l ${here/fileDirName}
+            cycletime: 60
+            datapoints:
+              lsBytesUsed: GAUGE
+            usessh: true
+            parser: ZenPacks.community.DirFile.parsers.File
+          FileTest1WithoutCount:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: file_stats.sh "${here/fileDirName}/${here/fileName}"
+            cycletime: 60
+            datapoints:
+              test_1: GAUGE
+              without: GAUGE
+            usessh: true
+          test_1:
+            type: DirFileDataSource
+            cycletime: 60
+            datapoints:
+              matches: GAUGE
+            stringToFind: test 1
+          without:
+            type: DirFileDataSource
+            severity: err
+            cycletime: 60
+            datapoints:
+              matches: GAUGE
+            stringToFind: without
+        graphs:
+          Disk Used:
+            height: 100
+            width: 500
+            units: Bytes
+            graphpoints:
+              diskUsed:
+                dpName: FileDiskUsed_diskUsed
+          ls Disk Used:
+            height: 100
+            width: 500
+            units: Bytes
+            graphpoints:
+              lsBytesUsed:
+                dpName: FileLsDiskUsed_lsBytesUsed
+          test 1 count:
+            height: 100
+            width: 500
+            units: Matches
+            graphpoints:
+              test_1:
+                dpName: FileTest1WithoutCount_test_1
+          test_1 by datasource:
+            height: 100
+            width: 500
+            units: Matches
+            graphpoints:
+              test_1_matches:
+                dpName: test_1_matches
+          without by datasource:
+            height: 100
+            width: 500
+            units: 'Matches '
+            graphpoints:
+              matches:
+                dpName: without_matches
+          without count:
+            height: 100
+            width: 500
+            units: Matches
+            graphpoints:
+              without:
+                dpName: FileTest1WithoutCount_without
+
