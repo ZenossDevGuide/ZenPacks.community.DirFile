@@ -56,9 +56,9 @@ class RootDiskFreePythonDeviceData(PythonDataSourcePlugin):
             keyPath = ds0.zKeyPath.replace('~', homedir)
         else:
             keyPath = ds0.zKeyPath
-        # script is df_root_ssh.shh taking 3 parameters, zCommandUsername, keyPath, hostname
-        cmd = [ os.path.join(libexecdir, 'df_root_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device ]
-        #cmd = [ os.path.join(libexecdir, 'df_root_ssh_bad.sh'), ds0.zCommandUsername, keyPath, ds0.device ]
+        # script is df_root_ssh.shh taking 3 parameters, zCommandUsername, keyPath, host address
+        cmd = [ os.path.join(libexecdir, 'df_root_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp ]
+        #cmd = [ os.path.join(libexecdir, 'df_root_ssh_bad.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp ]
         log.debug(' cmd is %s \n ' % (cmd) )
 
         value = None

@@ -11,8 +11,9 @@ from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonD
 # Twisted Imports
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
-    """ DirFile File component data source plugin """
+
+class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
+    """ DirFile Dir component data source plugin """
 
     # List of device attributes you might need to do collection.
     proxy_attributes = (
@@ -22,16 +23,16 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
 
     @classmethod
     def config_key(cls, datasource, context):
-        # context will be a File.  
+        # context will be a Dir.  
 
         return (
-            context.device().id,   
+            context.device().id,    
             datasource.getCycleTime(context),
             datasource.rrdTemplate().id,
             datasource.id,
             datasource.plugin_classname,
             context.id,
-	    'FileDiskUsedPythonDeviceData',
+	    'DirDiskUsedPythonDeviceData',
             )
 
     @classmethod
@@ -40,15 +41,10 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         # Use params method to get at attributes or methods on the context.
         # params is run by zenhub which DOES have access to the ZODB database.
         params = {}
-        params['fileName'] = ''
-        if hasattr(context, 'fileName'):
-            params['fileName'] = context.fileName
-        params['fileDirName'] = ''
-        if hasattr(context, 'fileDirName'):
-            params['fileDirName'] = context.fileDirName
-        params['fileId'] = context.id
-        # Need to run zenhub in debug to see log.debug statements here
-        log.info(' params is %s ' % (params))
+        params['dirName'] = ''
+        if hasattr(context, 'dirName'):
+            params['dirName'] = context.dirName
+            params['dirId'] = context.id
         return params
 
     @inlineCallbacks
@@ -68,11 +64,10 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             keyPath = ds0.zKeyPath.replace('~', homedir)
         else:
             keyPath = ds0.zKeyPath
-        fileName = ds0.params['fileDirName'] + '/' + ds0.params['fileName']    
-        # script is dufile_ssh.sh taking 4 parameters, zCommandUsername, keyPath, host address, fileName
-        cmd = [ os.path.join(libexecdir, 'dufile_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, fileName ]
+        # script is dudir_ssh.sh taking 4 parameters, zCommandUsername, keyPath, hostname, dirName
+        cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device, ds0.params['dirName'] ]
         # Next line should cause an error
-        #cmd = [ os.path.join(libexecdir, 'dufile_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, '/blah' ]
+        #cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device, '/blah' ]
         log.debug(' cmd is %s \n ' % (cmd) )
 
         retDict = {}
@@ -84,25 +79,14 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             if not cmd_stderr:
                 # The ultimate result from the plugin is a dictionary where keys are component ids so
                 #   return a dictionary here with the fileId (not name) as key
-                retDict = {ds0.params['fileId'] : int(cmd_stdout.rstrip())}
+                retDict = {ds0.params['dirId'] : int(cmd_stdout.rstrip())}
                 log.debug('ds0.params is %s and retDict = %s ' % (ds0.params, retDict))
             else:    
                 raise Exception('%s ' % (cmd_stderr))
         except:    
-            log.exception('Error gathering FileDiskUsed info - %s ' % (cmd_stderr))
+            log.exception('Error gathering DirDiskUsed info - %s ' % (cmd_stderr))
             raise Exception(' %s' % (cmd_stderr))
         returnValue(retDict)
-
-    def onResult(self, result, config):
-        """
-        Called first for success and error.
- 
-        You can omit this method if you want the result of the collect method
-        to be used without further processing.
-        """
-        log.debug( 'result is %s ' % (result))
-        return result
-
 
     def onSuccess(self, result, config):
         """
@@ -159,10 +143,20 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
                         log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
                         if datapoint_id not in ['duBytes',]:
                             continue
+
                         dpname = '_'.join((ds.datasource, 'duBytes'))
                         log.debug('dpname is %s' % (dpname))
                         log.debug('data[values] is %s' % (data['values']))
                         data['values'][ds.component] = {dpname : v}
+
+        # onSuccess will generate a Debug severity event - just to prove we can!
+        data['events'].append({
+                    'device': config.id,
+                    'summary': 'Dudir',
+                    'severity': 1,
+                    'eventClass': '/App',
+                    'eventKey': 'DirDiskUsedPythonDeviceData',
+                    })
 
         log.debug( 'data is %s ' % (data))
         return data
@@ -178,10 +172,18 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         log.debug( 'In OnError - result is %s and config is %s ' % (result, config))
         return {
             'events': [{
-                'summary': 'Error getting file du data with zenpython: %s' % result,
-                'eventKey': 'FileDiskUsedPythonDeviceData',
+                'summary': 'Error getting directory du data with zenpython: %s' % result,
+                'eventKey': 'DirDiskUsedPythonDeviceData',
                 'severity': 4,
                 }],
             }
 
+    def onComplete(self, result, config):
+        """
+        Called last for success and error.
+ 
+        You can omit this method if you want the result of either the
+        onSuccess or onError method to be used without further processing.
+        """
+        return result
 

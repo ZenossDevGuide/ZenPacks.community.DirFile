@@ -8,4 +8,5 @@
 
 echo $1 $2 $3 $4 > /tmp/dudir.tmp
 #ssh -l zenplug -i ~/.ssh/id_dsa taplow-11 /usr/bin/du -P -b -d 0 /opt/zenoss/local/fredtest | cut -f 1
-ssh -l "$1" -i "$2" "$3"  /usr/bin/du -P -b -d 0 "$4" | cut -f 1
+#ssh -l "$1" -i "$2" "$3"  /usr/bin/du -P -b -d 0 "$4" | cut -f 1
+ssh -l "$1" -i "$2" "$3"  /usr/bin/du -P -b -s "$4" | cut -f 1
