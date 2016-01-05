@@ -165,6 +165,9 @@ Requirements & Dependencies
 
     and then rerun the test above.
 
+* ZenPacks:
+
+  - ZenPacks.zenoss.PythonCollector >= 1.6
 
 * Installation Notes: 
 
@@ -213,6 +216,8 @@ Change History
 ==============
 * 1.0.0
    - Initial Release
+* 1.0.1
+   - Initial Release with PythonCollector
 
 
 Screenshots
@@ -223,7 +228,7 @@ See the screenshots directory.
 
 .. External References Below. Nothing Below This Line Should Be Rendered
 
-.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/master/dist/ZenPacks.community.DirFile-1.0.0-py2.7.egg?raw=true
+.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/python/dist/ZenPacks.community.DirFile-1.0.1-py2.7.egg?raw=true
 
 Acknowledgements
 ================
