@@ -1,0 +1,206 @@
+# Setup logging
+import logging
+log = logging.getLogger('.'.join(['zen', __name__]))
+
+import os
+
+# PythonCollector Imports
+from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonDataSourcePlugin
+
+# Twisted Imports
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+import subprocess
+
+import pprint
+
+
+class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
+    """ DirFile Device data source plugin """
+
+    # List of device attributes you might need to do collection.
+    proxy_attributes = (
+        'zCommandUsername',
+        'zCommandPassword',
+        'zCommandPath',
+        'zCommandLoginTimeout',
+        'zCommandCommandTimeout',
+        'zKeyPath',
+        'zCommandPort',
+        )
+
+    @classmethod
+    def config_key(cls, datasource, context):
+        # One call will get data for device and components
+        #   so don't include context.id in the config_key return
+
+        return (
+            context.device().id,
+            datasource.getCycleTime(context),
+            datasource.rrdTemplate().id,
+            datasource.id,
+            datasource.plugin_classname,
+	    'DirDiskUsedPythonDeviceData',
+            )
+
+    @classmethod
+    def params(cls, datasource, context):
+        # context is the object that the template is applied to  - either a device or a component
+        params = {}
+        params['dirName'] = ''
+        if hasattr(context, 'dirName'):
+            params['dirName'] = context.dirName
+
+        # Get path to executable file, starting from this file
+        #    which is in ZenPack base dir/datasources
+        # Executables are in ZenPack base dir / libexec
+
+        thisabspath = os.path.abspath(__file__)
+        (filedir, tail) = os.path.split(thisabspath)
+        #libexecdir = filedir + '/../libexec'
+        libexecdir = thisabspath + '/libexec'
+
+        # script is dudir.sh taking 4 parameters, zCommandUsername, zKeyPathP, hostname, dirName
+
+        #  In this case it is a device with all the attributes and methods of a device
+        params['cmd'] = [ os.path.join(libexecdir, 'dudir.sh') ]
+        return params
+
+    @inlineCallbacks
+    def collect(self, config):
+
+        ds0 = config.datasources[0]
+        thisabspath = os.path.dirname(os.path.abspath(__file__))
+        libexecdir = thisabspath + '/libexec'
+        # script is dudir.sh taking 4 parameters, zCommandUsername, zKeyPathP, hostname, dirName
+        cmd = [ os.path.join(libexecdir, 'dudir.sh'), ds0.zCommandUsername, ds0.zKeyPath, ds0.device, ds0.params['dirName'] ]
+        #cmd = [ os.path.join(libexecdir, 'dudir.sh'), ds0.zCommandUsername, ds0.zKeyPath, ds0.device, '/opt/zenoss/localll' ]
+        log.debug(' cmd is %s \n ' % (cmd) )
+        #cmd_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #cmd_out = cmd_process.communicate()
+        # Either use dd = Deferred() without the @inlineCallbacks decorator or use 
+        #   @inlineCallbacks and yield
+        #dd = Deferred()
+        # cmd_process.communicate() returns a tuple of (stdoutdata, stderrordata)
+        #if cmd_process.returncode == 0:
+        #    dd.callback(cmd_out[0])
+        #else:
+        #    dd.errback(cmd_out[1])
+        #return dd
+        try:
+            cmd_process = yield(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+            # cmd_process.communicate() returns a tuple of (stdoutdata, stderrordata)
+            cmd_stdout, cmd_stderr = cmd_process.communicate()
+            log.info(' stdout is %s and stderr is %s ' % (cmd_stdout, cmd_stderr))
+            returnValue(cmd_stdout)
+        except Exception, e:
+            log.error(
+                "Failed to get du  data from %s: %s", ds0.device, e)
+
+
+    def onResult(self, result, config):
+        """
+        Called first for success and error.
+ 
+        You can omit this method if you want the result of the collect method
+        to be used without further processing.
+        """
+        log.debug( 'result is %s ' % (result))
+
+
+        return result
+
+
+    def onSuccess(self, result, config):
+        """
+        Called only on success. After onResult, before onComplete.
+ 
+        You should return a data structure with zero or more events, values
+        and maps.
+        Note that values is a dictionary and events and maps are lists.
+
+        return {
+            'events': [{
+                'summary': 'successful collection',
+                'eventKey': 'myPlugin_result',
+                'severity': 0,
+                },{
+                'summary': 'first event summary',
+                'eventKey': 'myPlugin_result',
+                'severity': 2,
+                },{
+                'summary': 'second event summary',
+                'eventKey': 'myPlugin_result',
+                'severity': 3,
+                }],
+ 
+            'values': {
+                None: {  # datapoints for the device (no component)
+                    'datapoint1': 123.4,
+                    'datapoint2': 5.678,
+                    },
+                'cpu1': {
+                    'user': 12.1,
+                    nsystem': 1.21,
+                    'io': 23,
+                    }
+                },
+ 
+            'maps': [
+                ObjectMap(...),
+                RelationshipMap(..),
+                ]
+            }
+            """
+
+        log.debug( 'In success - result is %s and config is %s ' % (result, config))
+        data = self.new_data()
+        ds0 = config.datasources[0]
+        data['values'] = {}
+        ds0 = config.datasources[0]
+        log.debug('ds0 is %s ' % (ds0))
+        for k, v in result.items():
+            log.debug(' k is %s and v is %s ' (k,v))
+            if ds0.component == k:
+                dpname = '_'.join((ds0.datasource, 'duBytes'))
+                data['values'][k][dpname] = v
+
+
+        data['events'].append({
+                    'device': config.id,
+                    'summary': 'Dudir',
+                    'severity': 1,
+                    'eventClass': '/App',
+                    'eventKey': 'DirDiskUsedPythonDeviceData',
+                    })
+
+        data['maps'] = []
+
+        log.debug( 'data is %s ' % (data))
+        return data
+
+    def onError(self, result, config):
+        """
+        Called only on error. After onResult, before onComplete.
+ 
+        You can omit this method if you want the error result of the collect
+        method to be used without further processing. It recommended to
+        implement this method to capture errors.
+        """
+        log.debug( 'In OnError - result is %s and config is %s ' % (result, config))
+        return {
+            'events': [{
+                'summary': 'Error getting Snmp CPU data with zenpython: %s' % result,
+                'eventKey': 'PythonCmdSnmpCpu',
+                'severity': 4,
+                }],
+            }
+
+    def onComplete(self, result, config):
+        """
+        Called last for success and error.
+ 
+        You can omit this method if you want the result of either the
+        onSuccess or onError method to be used without further processing.
+        """
+        return result
+
