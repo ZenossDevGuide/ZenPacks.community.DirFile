@@ -23,6 +23,7 @@ device_classes:
     remove: False     # False is default - specified for clarity
     zProperties:
       zPythonClass: ZenPacks.community.DirFile.DirFileDevice
+      zSshConcurrentSessions: 5
       zDeviceTemplates: 
         - Disk_free_df
         - Device
@@ -35,7 +36,7 @@ device_classes:
           DirDiskUsed:
             type: COMMAND
             component: ${here/id}
-            commandTemplate: /usr/bin/du -P -b -d 0 ${here/dirName} | cut -f 1
+            commandTemplate: /usr/bin/du -P -b -s ${here/dirName} | cut -f 1
             cycletime: 60
             datapoints:
               disk_used: GAUGE
