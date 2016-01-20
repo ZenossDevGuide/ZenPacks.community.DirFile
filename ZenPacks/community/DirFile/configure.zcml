@@ -19,6 +19,12 @@
         factory=".datasources.DirFileDataSource.DirFileDataSourceInfo"
         />
 
+    <adapter
+        provides=".datasources.DirFilePythonDataSource.IDirFilePythonDataSourceInfo"
+        for=".datasources.DirFilePythonDataSource.DirFilePythonDataSource"
+        factory=".datasources.DirFilePythonDataSource.DirFilePythonDataSourceInfo"
+        />
+
 </configure>
 
 

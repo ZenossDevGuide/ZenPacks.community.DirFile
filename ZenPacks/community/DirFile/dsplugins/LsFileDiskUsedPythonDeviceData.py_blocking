@@ -4,6 +4,7 @@ log = logging.getLogger('.'.join(['zen', __name__]))
 
 import os
 import subprocess
+import re
 
 # PythonCollector Imports
 from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonDataSourcePlugin
@@ -11,9 +12,8 @@ from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonD
 # Twisted Imports
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-
-class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
-    """ DirFile Dir component data source plugin """
+class LsFileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
+    """ DirFile File component data source plugin """
 
     # List of device attributes you might need to do collection.
     proxy_attributes = (
@@ -23,16 +23,15 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
 
     @classmethod
     def config_key(cls, datasource, context):
-        # context will be a Dir.  
+        # context will be a File.  
 
         return (
-            context.device().id,    
+            context.device().id,   
             datasource.getCycleTime(context),
             datasource.rrdTemplate().id,
             datasource.id,
             datasource.plugin_classname,
-            context.id,
-	    'DirDiskUsedPythonDeviceData',
+	    'LsFileDiskUsedPythonDeviceData',
             )
 
     @classmethod
@@ -41,10 +40,15 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         # Use params method to get at attributes or methods on the context.
         # params is run by zenhub which DOES have access to the ZODB database.
         params = {}
-        params['dirName'] = ''
-        if hasattr(context, 'dirName'):
-            params['dirName'] = context.dirName
-            params['dirId'] = context.id
+        params['fileName'] = ''
+        if hasattr(context, 'fileName'):
+            params['fileName'] = context.fileName
+        params['fileDirName'] = ''
+        if hasattr(context, 'fileDirName'):
+            params['fileDirName'] = context.fileDirName
+        params['fileId'] = context.id
+        # Need to run zenhub in debug to see log.debug statements here
+        log.info(' params is %s ' % (params))
         return params
 
     @inlineCallbacks
@@ -64,10 +68,8 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             keyPath = ds0.zKeyPath.replace('~', homedir)
         else:
             keyPath = ds0.zKeyPath
-        # script is dudir_ssh.sh taking 4 parameters, zCommandUsername, keyPath, hostname, dirName
-        cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device, ds0.params['dirName'] ]
-        # Next line should cause an error
-        #cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device, '/blah' ]
+        # script is lsFileDiskUsed_ssh.sh taking 4 parameters, zCommandUsername, keyPath, host address, fileDirName
+        cmd = [ os.path.join(libexecdir, 'lsFileDiskUsed_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, ds0.params['fileDirName'] ]
         log.debug(' cmd is %s \n ' % (cmd) )
 
         retDict = {}
@@ -79,14 +81,49 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             if not cmd_stderr:
                 # The ultimate result from the plugin is a dictionary where keys are component ids so
                 #   return a dictionary here with the fileId (not name) as key
-                retDict = {ds0.params['dirId'] : int(cmd_stdout.rstrip())}
+                # cmd_stdout is the complete string returned from the command, like: 
+                #
+                #total 16
+                #-rw-r--r-- 1 jane users  119 Dec  2 17:36 fred1.log_20151110
+                #-rw-r--r-- 1 jane users  559 Dec  2 17:37 fred1.log_20151116
+                #-rw-r--r-- 1 jane users  500 Dec  3 11:09 fred1.log_20151202
+                #drwxr-xr-x 3 jane users 4096 Dec  2 17:38 test
+                #
+                #Use regular expression re module to allocate file sizes to file names
+                # component fileName attribute instance matches last field eg. fred1.log_20151110
+                # 1-or-more non-whitespace char followed by 1-or-more whitspace, 1 or more times
+                #    followed by 1-or-more anything  put into component variable
+                #    followed by end-of-line    ie. last field
+                componentScanner = r'(\S+\s+)+(?P<component>.+)$'
+                            
+                # Get 5th field that must be digits
+                # 1-or-more non-whitespace char followed by 1-or-more whitspace, 4 times
+                #    followed by 1-or-more digits  put into lsBytesUsed variable
+                scanners = r'(\S+\s+){4}(?P<lsBytesUsed>[0-9]+)'
+                lines = cmd_stdout.split('\n')
+                for l in lines:
+                    k = re.search(componentScanner, l)
+                    v = re.search(scanners,l)
+                    if k and v:
+                        retDict[k.group('component')] = v.group('lsBytesUsed')
                 log.debug('ds0.params is %s and retDict = %s ' % (ds0.params, retDict))
             else:    
                 raise Exception('%s ' % (cmd_stderr))
         except:    
-            log.exception('Error gathering DirDiskUsed info - %s ' % (cmd_stderr))
+            log.exception('Error gathering LsFileDiskUsed info - %s ' % (cmd_stderr))
             raise Exception(' %s' % (cmd_stderr))
         returnValue(retDict)
+
+    def onResult(self, result, config):
+        """
+        Called first for success and error.
+ 
+        You can omit this method if you want the result of the collect method
+        to be used without further processing.
+        """
+        log.debug( 'result is %s ' % (result))
+        return result
+
 
     def onSuccess(self, result, config):
         """
@@ -139,24 +176,16 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
                 log.debug('ds.component is %s' % (ds.component))
                 log.debug(' k is %s and v is %s ' % (k,v))
                 if ds.component == k:
+                    dpdict = {}
                     for datapoint_id in (x.id for x in ds.points):
                         log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
-                        if datapoint_id not in ['duBytes',]:
+                        if datapoint_id not in ['lsBytesUsed',]:
                             continue
-
-                        dpname = '_'.join((ds.datasource, 'duBytes'))
+                        dpname = '_'.join((ds.datasource, 'lsBytesUsed'))
+                        dpdict[dpname] = v
                         log.debug('dpname is %s' % (dpname))
-                        log.debug('data[values] is %s' % (data['values']))
-                        data['values'][ds.component] = {dpname : v}
-
-        # onSuccess will generate a Debug severity event - just to prove we can!
-        data['events'].append({
-                    'device': config.id,
-                    'summary': 'Dudir',
-                    'severity': 1,
-                    'eventClass': '/App',
-                    'eventKey': 'DirDiskUsedPythonDeviceData',
-                    })
+                        log.debug('dpdict is %s' % (dpdict))
+                    data['values'][ds.component] = dpdict
 
         log.debug( 'data is %s ' % (data))
         return data
@@ -172,18 +201,10 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         log.debug( 'In OnError - result is %s and config is %s ' % (result, config))
         return {
             'events': [{
-                'summary': 'Error getting directory du data with zenpython: %s' % result,
-                'eventKey': 'DirDiskUsedPythonDeviceData',
+                'summary': 'Error getting file ls data with zenpython: %s' % result,
+                'eventKey': 'LsFileDiskUsedPythonDeviceData',
                 'severity': 4,
                 }],
             }
 
-    def onComplete(self, result, config):
-        """
-        Called last for success and error.
- 
-        You can omit this method if you want the result of either the
-        onSuccess or onError method to be used without further processing.
-        """
-        return result
 

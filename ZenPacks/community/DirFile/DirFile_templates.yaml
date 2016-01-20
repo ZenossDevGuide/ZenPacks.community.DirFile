@@ -1,0 +1,331 @@
+name: ZenPacks.community.DirFile
+device_classes: !ZenPackSpec
+  /Server/Linux/DirFile:
+    templates:
+      Dir:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          DirDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b -s ${here/dirName} | cut -f 1
+            cycletime: 60
+            datapoints:
+              disk_used: GAUGE
+            usessh: !!python/unicode 'true'
+        graphs:
+          Disk used:
+            units: Bytes
+            graphpoints:
+              disk_used:
+                dpName: DirDiskUsed_disk_used
+      DirPythonXml:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          dudir:
+            type: Python
+            component: ${here/id}
+            cycletime: 60
+            datapoints:
+              duBytes:
+                description: ""
+            plugin_classname: ZenPacks.community.DirFile.dsplugins.DirDiskUsedPythonDeviceData
+        graphs:
+          Disk used Python:
+            units: Bytes
+            graphpoints:
+              duBytes:
+                dpName: dudir_duBytes
+      Dir_backup:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          DirDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b -d 0 ${here/dirName} | cut -f 1
+            cycletime: 60
+            datapoints:
+              disk_used: GAUGE
+            usessh: !!python/unicode 'true'
+        graphs:
+          Disk used:
+            units: Bytes
+            graphpoints:
+              disk_used:
+                dpName: DirDiskUsed_disk_used
+      DiskFreeDfPython:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          dfPython:
+            type: Python
+            component: ${here/id}
+            cycletime: 60
+            datapoints:
+              dfRootPython: {}
+            plugin_classname: ZenPacks.community.DirFile.dsplugins.RootDiskFreePythonDeviceData
+        graphs:
+          Root df (Python):
+            units: Bytes
+            graphpoints:
+              dfRootPython:
+                dpName: dfPython_dfRootPython
+      Disk_free_df:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          df:
+            type: COMMAND
+            component: /
+            commandTemplate: df_root.sh
+            cycletime: 60
+            datapoints:
+              df_root: GAUGE
+            usessh: !!python/unicode 'true'
+        graphs:
+          root df:
+            units: Bytes
+            graphpoints:
+              df_root:
+                dpName: df_df_root
+      Disk_free_df-upgrade-1449573334:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          df:
+            type: COMMAND
+            component: /
+            commandTemplate: df_root.sh
+            cycletime: 60
+            datapoints:
+              df_root: GAUGE
+            usessh: true
+        graphs:
+          root df:
+            units: Bytes
+            graphpoints:
+              df_root:
+                dpName: df_df_root
+      File:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          FileDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b ${here/fileDirName}/${here/fileName}
+              | cut -f 1
+            cycletime: 60
+            datapoints:
+              diskUsed: GAUGE
+            usessh: !!python/unicode 'true'
+          FileLsDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /bin/ls -l ${here/fileDirName}
+            cycletime: 60
+            datapoints:
+              lsBytesUsed: GAUGE
+            usessh: !!python/unicode 'true'
+            parser: !!python/unicode 'ZenPacks.community.DirFile.parsers.File'
+          FileTest1WithoutCount:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: file_stats.sh "${here/fileDirName}/${here/fileName}"
+            cycletime: 60
+            datapoints:
+              test_1: GAUGE
+              without: GAUGE
+            usessh: !!python/unicode 'true'
+        graphs:
+          Disk Used:
+            units: Bytes
+            graphpoints:
+              diskUsed:
+                dpName: FileDiskUsed_diskUsed
+          ls Disk Used:
+            units: Bytes
+            graphpoints:
+              lsBytesUsed:
+                dpName: FileLsDiskUsed_lsBytesUsed
+          test 1 count:
+            units: Matches
+            graphpoints:
+              test_1:
+                dpName: FileTest1WithoutCount_test_1
+          without count:
+            units: Matches
+            graphpoints:
+              without:
+                dpName: FileTest1WithoutCount_without
+      FileLsDiskUsedPythonXml:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          FileLsDiskUsedPython:
+            type: Python
+            component: ${here/id}
+            eventClass: /DirFile
+            cycletime: 60
+            datapoints:
+              lsBytesUsed: {}
+            plugin_classname: ZenPacks.community.DirFile.dsplugins.LsFileDiskUsedPythonDeviceData
+        graphs:
+          ls Disk Used (Python):
+            units: Bytes
+            graphpoints:
+              lsBytesUsed:
+                dpName: FileLsDiskUsedPython_lsBytesUsed
+      FilePythonXml:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          duFile:
+            type: Python
+            component: ${here/id}
+            cycletime: 60
+            datapoints:
+              duBytes:
+                description: ""
+            plugin_classname: ZenPacks.community.DirFile.dsplugins.FileDiskUsedPythonDeviceData
+        graphs:
+          Disk Used (Python):
+            units: Bytes
+            graphpoints:
+              duBytes:
+                dpName: duFile_duBytes
+      FileStatsParamPythonXml:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          test_1Python:
+            type: DirFilePythonDataSource
+            datapoints:
+              matches: {}
+            stringToFind: test 1
+          withoutPython:
+            type: DirFilePythonDataSource
+            datapoints:
+              matches: {}
+            stringToFind: without
+        graphs:
+          test 1 by Python datasource:
+            units: matches
+            graphpoints:
+              matches:
+                dpName: test_1Python_matches
+          without by Python datasource:
+            units: matches
+            graphpoints:
+              matches:
+                dpName: withoutPython_matches
+      FileStatsPythonXml:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          statsFile:
+            type: Python
+            component: ${here/id}
+            eventClass: /DirFile
+            cycletime: 60
+            datapoints:
+              test_1: {}
+              without: {}
+            plugin_classname: ZenPacks.community.DirFile.dsplugins.FileStatsPythonDeviceData
+        graphs:
+          test 1 count (Python):
+            units: Matches
+            graphpoints:
+              test_1:
+                dpName: statsFile_test_1
+          without count (Python):
+            units: Matches
+            graphpoints:
+              without:
+                dpName: statsFile_without
+      FileXml:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          test_1:
+            type: DirFileDataSource
+            cycletime: 60
+            datapoints:
+              matches:
+                description: ""
+            stringToFind: test 1
+          without:
+            type: DirFileDataSource
+            severity: err
+            cycletime: 60
+            datapoints:
+              matches:
+                description: ""
+            stringToFind: without
+        graphs:
+          test_1 by datasource:
+            units: Matches
+            graphpoints:
+              test_1_matches:
+                dpName: test_1_matches
+          without by datasource:
+            units: Matches
+            graphpoints:
+              matches:
+                dpName: without_matches
+      File_backup:
+        description: ""
+        targetPythonClass: Products.ZenModel.Device
+        datasources:
+          FileDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /usr/bin/du -P -b ${here/fileDirName}/${here/fileName}
+              | cut -f 1
+            cycletime: 60
+            datapoints:
+              diskUsed: GAUGE
+            usessh: !!python/unicode 'true'
+          FileLsDiskUsed:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: /bin/ls -l ${here/fileDirName}
+            cycletime: 60
+            datapoints:
+              lsBytesUsed: GAUGE
+            usessh: !!python/unicode 'true'
+            parser: !!python/unicode 'ZenPacks.community.DirFile.parsers.File'
+          FileTest1WithoutCount:
+            type: COMMAND
+            component: ${here/id}
+            commandTemplate: file_stats.sh "${here/fileDirName}/${here/fileName}"
+            cycletime: 60
+            datapoints:
+              test_1: GAUGE
+              without: GAUGE
+            usessh: !!python/unicode 'true'
+        graphs:
+          Disk Used:
+            units: Bytes
+            graphpoints:
+              diskUsed:
+                dpName: FileDiskUsed_diskUsed
+          ls Disk Used:
+            units: Bytes
+            graphpoints:
+              lsBytesUsed:
+                dpName: FileLsDiskUsed_lsBytesUsed
+          test 1 count:
+            units: Matches
+            graphpoints:
+              test_1:
+                dpName: FileTest1WithoutCount_test_1
+          without count:
+            units: Matches
+            graphpoints:
+              without:
+                dpName: FileTest1WithoutCount_without
+

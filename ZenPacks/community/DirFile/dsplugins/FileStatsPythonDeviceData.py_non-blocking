@@ -3,6 +3,7 @@ import logging
 log = logging.getLogger('.'.join(['zen', __name__]))
 
 import os
+import re
 
 # PythonCollector Imports
 from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonDataSourcePlugin
@@ -11,13 +12,13 @@ from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonD
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.utils import getProcessOutputAndValue
 
-
-class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
-    """ DirFile File component data source plugin """
+class FileStatsPythonDeviceData(PythonDataSourcePlugin):
+    """ DirFile File component data source plugin for test_1 and without stats"""
 
     # List of device attributes you might need to do collection.
     proxy_attributes = (
         'zCommandUsername',
+        'zCommandPath',
         'zKeyPath',
         )
 
@@ -32,7 +33,7 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             datasource.id,
             datasource.plugin_classname,
             context.id,
-	    'FileDiskUsedPythonDeviceData',
+	    'FileStatsPythonDeviceData',
             )
 
     @classmethod
@@ -70,12 +71,11 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         else:
             keyPath = ds0.zKeyPath
         fileName = ds0.params['fileDirName'] + '/' + ds0.params['fileName']    
-        # script is dufile_ssh.sh taking 4 parameters, zCommandUsername, keyPath, host address, fileName
-        cmd = os.path.join(libexecdir, 'dufile_ssh.sh')
-        args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, fileName)
-
+        # script is file_stats_ssh.sh taking 5 parameters, zCommandUsername, keyPath, host address, fileName, zCommandPath
+        cmd = os.path.join(libexecdir, 'file_stats_ssh.sh')
+        args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, fileName, ds0.zCommandPath)
         # Next line should cause an error
-        #args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, '/blah')
+        #args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, fileName, '/blah')
         log.debug(' cmd is %s \n ' % (cmd) )
 
         try:
@@ -85,7 +85,6 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             log.exception('Error in collect gathering %s info - %s ' % (ds0.plugin_classname, Exception))
             returnValue(cmd_stdout)
         returnValue(cmd_stdout)
-
 
     def onResult(self, result, config):
         """
@@ -105,77 +104,39 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         return result
 
     def onSuccess(self, result, config):
-        """
-        Called only on success. After onResult, before onComplete.
- 
-        You should return a data structure with zero or more events, values
-        and maps.
-        Note that values is a dictionary and events and maps are lists.
 
-        return {
-            'events': [{
-                'summary': 'successful collection',
-                'eventKey': 'myPlugin_result',
-                'severity': 0,
-                },{
-                'summary': 'first event summary',
-                'eventKey': 'myPlugin_result',
-                'severity': 2,
-                },{
-                'summary': 'second event summary',
-                'eventKey': 'myPlugin_result',
-                'severity': 3,
-                }],
- 
-            'values': {
-                None: {  # datapoints for the device (no component)
-                    'datapoint1': 123.4,
-                    'datapoint2': 5.678,
-                    },
-                'cpu1': {
-                    'user': 12.1,
-                    nsystem': 1.21,
-                    'io': 23,
-                    }
-                },
- 
-            'maps': [
-                ObjectMap(...),
-                RelationshipMap(..),
-                ]
-            }
-            """
-
-        log.debug( 'In FileDiskUsedPythonDeviceData success - result is %s and config is %s ' % (result, config))
-
+        log.debug( 'In FileStatsPythonDeviceData success - result is %s and config is %s ' % (result, config))
         data = self.new_data()
         data['values'] = {}
         for ds in config.datasources:
             log.debug(' Start of config.datasources loop')
-            #result[0] in format:
-            #     952   /opt/zenoss/local/fredtest/fred1.log_20151202
-            for l in result[0].split('\n'):
-                if l:
-                    try:
-                        k = l.split()[1].split('/')[-1]
-                        v = int(l.split()[0])
-                        # Next line generates an error
-                        #v = int(l.split()[3])
-                    except:
-                        raise Exception('In onSuccess - Error gathering %s info.  Result format wrong') % (ds.plugin_classname,)
+            # Set k to the fileId parameter passed in the params dictionary.
+            #   This will be used to test against the datasource component id.
+            # v is complete output returned from collect method like:
+            #     File string count test ok | test_1=90 without=17
+            k = ds.params['fileId']
+            v = result[0]
+            log.debug('ds.component is %s' % (ds.component))
+            log.debug(' k is %s and v is %s ' % (k,v))
+            if ds.component == k:
+                # Create dictionary to hold dpname:dpvalue pairs for each file component
+                #   Eg. {'statsFile_test_1': '11', 'statsFile_without': '1'}
+                dpdict = {}
+                for datapoint_id in (x.id for x in ds.points):
+                    log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
+                    # Datapoint names are hard-coded here
+                    if datapoint_id not in ['test_1', 'without']:
                         continue
-                    log.debug('ds.component is %s' % (ds.component))
-                    log.debug(' k is %s and v is %s ' % (k,v))
-                    if ds.component == k:
-                        for datapoint_id in (x.id for x in ds.points):
-                            log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
-                            if datapoint_id not in ['duBytes',]:
-                                continue
-                            dpname = '_'.join((ds.datasource, 'duBytes'))
-                            log.debug('dpname is %s' % (dpname))
-                            data['values'][ds.component] = {dpname : v}
-                            log.debug('data[values] is %s' % (data['values']))
-                            break           # got a match so get out of l loop
+                    dpname = '_'.join((ds.datasource, datapoint_id))
+                    log.debug('dpname is %s' % (dpname))
+                    # v is complete output returned from collect method like
+                    #     File string count test ok | test_1=90 without=17
+                    # Use regular expression re module to get values for test_1 and without
+                    m = re.search(r'File string count test ok \| test_1=(?P<test_1>[0-9]*) without=(?P<without>[0-9]*)', v)
+                    if m.group(datapoint_id):
+                        dpdict[dpname] = m.group(datapoint_id)
+                    log.debug('dpdict is %s' % (dpdict))
+                data['values'][ds.component] = dpdict
 
         log.debug( 'data is %s ' % (data))
         return data
@@ -190,10 +151,10 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         """
         ds0 = config.datasources[0]
         plugin = ds0.plugin_classname.split('.')[-1]
-        log.debug( 'In onError - result is %s and config is %s ' % (result, config))
+        log.debug( 'In OnError - result is %s and config is %s ' % (result, config))
         return {
             'events': [{
-                'summary': 'Error getting file du data with zenpython: %s' % result,
+                'summary': 'Error getting file stats data with zenpython: %s' % result,
                 'eventKey': plugin,
                 'severity': 4,
                 }],

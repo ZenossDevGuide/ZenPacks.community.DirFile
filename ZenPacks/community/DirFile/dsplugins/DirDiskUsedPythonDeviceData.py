@@ -3,14 +3,15 @@ import logging
 log = logging.getLogger('.'.join(['zen', __name__]))
 
 import os
-import subprocess
 
 # PythonCollector Imports
 from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonDataSourcePlugin
+from Products.ZenUtils.Utils import prepId
+from Products.DataCollector.plugins.DataMaps import ObjectMap
 
 # Twisted Imports
 from twisted.internet.defer import inlineCallbacks, returnValue
-
+from twisted.internet.utils import getProcessOutputAndValue
 
 class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
     """ DirFile Dir component data source plugin """
@@ -65,29 +66,36 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         else:
             keyPath = ds0.zKeyPath
         # script is dudir_ssh.sh taking 4 parameters, zCommandUsername, keyPath, host address, dirName
-        #cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, ds0.params['dirName'] ]
-        cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, ds0.params['dirName'] ]
+        cmd = os.path.join(libexecdir, 'dudir_ssh.sh')
+        args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, ds0.params['dirName'])
+
         # Next line should cause an error
-        #cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, '/blah' ]
+        #args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, '/blahdir')
         log.debug(' cmd is %s \n ' % (cmd) )
 
-        retDict = {}
         try:
-            cmd_process = yield(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
-            # cmd_process.communicate() returns a tuple of (stdoutdata, stderrordata)
-            cmd_stdout, cmd_stderr = cmd_process.communicate()
-            log.info(' stdout is %s and stderr is %s ' % (cmd_stdout, cmd_stderr))
-            if not cmd_stderr:
-                # The ultimate result from the plugin is a dictionary where keys are component ids so
-                #   return a dictionary here with the fileId (not name) as key
-                retDict = {ds0.params['dirId'] : int(cmd_stdout.rstrip())}
-                log.debug('ds0.params is %s and retDict = %s ' % (ds0.params, retDict))
-            else:    
-                raise Exception('%s ' % (cmd_stderr))
-        except:    
-            log.exception('Error gathering DirDiskUsed info - %s ' % (cmd_stderr))
-            raise Exception(' %s' % (cmd_stderr))
-        returnValue(retDict)
+
+            cmd_stdout = yield getProcessOutputAndValue(cmd, args = args )
+            log.debug( 'DirDiskUsedPythonDeviceData collect. stdout is %s and stderr is %s and exit code is %s ' % (cmd_stdout[0], cmd_stdout[1], cmd_stdout[2]))
+        except Exception:
+            log.exception('Error in collect gathering DirDiskUsedPythonDeviceData info - %s ' % (Exception))
+            returnValue(cmd_stdout)
+        returnValue(cmd_stdout)
+
+    def onResult(self, result, config):
+        """
+        Called first for success and error.
+ 
+        You can omit this method if you want the result of the collect method
+        to be used without further processing.
+        """
+        log.debug( 'DirDiskUsedPythonDeviceData result stdout is %s and stderr is %s and exit code is %s ' % (result[0], result[1], result[2]))
+        if result[2] != 0:
+            log.exception('In onResult - Error in collect gathering DirDiskUsedPythonDeviceData info - %s ' % (result[1]))
+            raise Exception(' %s' % (result[1]))
+        if not result[0]:
+            raise Exception(' %s' % ('Error in collect gathering DirDiskUsedPythonDeviceData info.  No result returned'))
+        return result
 
     def onSuccess(self, result, config):
         """
@@ -136,19 +144,36 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         data['values'] = {}
         for ds in config.datasources:
             log.debug(' Start of config.datasources loop')
-            for k, v in result.items():
-                log.debug('ds.component is %s' % (ds.component))
-                log.debug(' k is %s and v is %s ' % (k,v))
-                if ds.component == k:
-                    for datapoint_id in (x.id for x in ds.points):
-                        log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
-                        if datapoint_id not in ['duBytes',]:
-                            continue
-
-                        dpname = '_'.join((ds.datasource, 'duBytes'))
-                        log.debug('dpname is %s' % (dpname))
-                        log.debug('data[values] is %s' % (data['values']))
-                        data['values'][ds.component] = {dpname : v}
+            #result[0] in format:
+            #     952   /opt/zenoss/local/fredtest
+            for l in result[0].split('\n'):
+                if l:
+                    try:
+                        # ds.component has / replaced with _ so prepId the directory name here
+                        k = prepId(l.split()[1])
+                        v = int(l.split()[0])
+                    except:
+                        raise Exception(' %s' % ('Error in collect gathering DirDiskUsedPythonDeviceData info.  Result format wrong'))
+                        continue
+                    log.debug('ds.component is %s' % (ds.component))
+                    log.debug(' k is %s and v is %s ' % (k,v))
+                    if ds.component == k:
+                        data['maps'].append(
+                                ObjectMap({
+                                    'relname': 'dirs',
+                                    'modname': 'ZenPacks.community.DirFile.Dir',
+                                    'id': ds.component,
+                                    'bytesUsed': v,
+                                    }))
+                        for datapoint_id in (x.id for x in ds.points):
+                            log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
+                            if datapoint_id not in ['duBytes',]:
+                                continue
+                            dpname = '_'.join((ds.datasource, 'duBytes'))
+                            log.debug('dpname is %s' % (dpname))
+                            data['values'][ds.component] = {dpname : v}
+                            log.debug('data[values] is %s' % (data['values']))
+                            break           # got a match so get out of l loop
 
         # onSuccess will generate a Debug severity event - just to prove we can!
         data['events'].append({
@@ -170,7 +195,7 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         method to be used without further processing. It recommended to
         implement this method to capture errors.
         """
-        log.debug( 'In OnError - result is %s and config is %s ' % (result, config))
+        log.debug( 'In onError - result is %s and config is %s ' % (result, config))
         return {
             'events': [{
                 'summary': 'Error getting directory du data with zenpython: %s' % result,

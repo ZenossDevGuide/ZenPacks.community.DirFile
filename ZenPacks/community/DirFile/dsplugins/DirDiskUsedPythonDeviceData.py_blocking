@@ -64,10 +64,11 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             keyPath = ds0.zKeyPath.replace('~', homedir)
         else:
             keyPath = ds0.zKeyPath
-        # script is dudir_ssh.sh taking 4 parameters, zCommandUsername, keyPath, hostname, dirName
-        cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device, ds0.params['dirName'] ]
+        # script is dudir_ssh.sh taking 4 parameters, zCommandUsername, keyPath, host address, dirName
+        #cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, ds0.params['dirName'] ]
+        cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, ds0.params['dirName'] ]
         # Next line should cause an error
-        #cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device, '/blah' ]
+        #cmd = [ os.path.join(libexecdir, 'dudir_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp, '/blah' ]
         log.debug(' cmd is %s \n ' % (cmd) )
 
         retDict = {}

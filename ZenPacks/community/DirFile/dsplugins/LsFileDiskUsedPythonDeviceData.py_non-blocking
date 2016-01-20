@@ -3,16 +3,16 @@ import logging
 log = logging.getLogger('.'.join(['zen', __name__]))
 
 import os
+import re
 
 # PythonCollector Imports
-from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonDataSourcePlugin
+from twisted.internet.utils import getProcessOutputAndValue
 
 # Twisted Imports
 from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.internet.utils import getProcessOutputAndValue
+from ZenPacks.zenoss.PythonCollector.datasources.PythonDataSource import PythonDataSourcePlugin
 
-
-class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
+class LsFileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
     """ DirFile File component data source plugin """
 
     # List of device attributes you might need to do collection.
@@ -24,6 +24,8 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
     @classmethod
     def config_key(cls, datasource, context):
         # context will be a File.  
+        # One command to a device supplies data for all context.id's 
+        #   so context.id not needed in config_key
 
         return (
             context.device().id,   
@@ -31,8 +33,8 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             datasource.rrdTemplate().id,
             datasource.id,
             datasource.plugin_classname,
-            context.id,
-	    'FileDiskUsedPythonDeviceData',
+            context.fileDirName,
+	    'LsFileDiskUsedPythonDeviceData',
             )
 
     @classmethod
@@ -49,7 +51,7 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             params['fileDirName'] = context.fileDirName
         params['fileId'] = context.id
         # Need to run zenhub in debug to see log.debug statements here
-        log.info(' params is %s ' % (params))
+        log.info(' LsFileDiskUsedPythonDeviceData params is %s ' % (params))
         return params
 
     @inlineCallbacks
@@ -69,13 +71,9 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             keyPath = ds0.zKeyPath.replace('~', homedir)
         else:
             keyPath = ds0.zKeyPath
-        fileName = ds0.params['fileDirName'] + '/' + ds0.params['fileName']    
-        # script is dufile_ssh.sh taking 4 parameters, zCommandUsername, keyPath, host address, fileName
-        cmd = os.path.join(libexecdir, 'dufile_ssh.sh')
-        args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, fileName)
-
-        # Next line should cause an error
-        #args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, '/blah')
+        # script is lsFileDiskUsed_ssh.sh taking 4 parameters, zCommandUsername, keyPath, host address, fileDirName
+        cmd = os.path.join(libexecdir, 'lsFileDiskUsed_ssh.sh')
+        args = ( ds0.zCommandUsername, keyPath, ds0.manageIp, ds0.params['fileDirName'])
         log.debug(' cmd is %s \n ' % (cmd) )
 
         try:
@@ -85,7 +83,6 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             log.exception('Error in collect gathering %s info - %s ' % (ds0.plugin_classname, Exception))
             returnValue(cmd_stdout)
         returnValue(cmd_stdout)
-
 
     def onResult(self, result, config):
         """
@@ -146,36 +143,59 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
             }
             """
 
-        log.debug( 'In FileDiskUsedPythonDeviceData success - result is %s and config is %s ' % (result, config))
-
+        log.debug( 'In LsFileDiskUsedPythonDeviceData success - result is %s and config is %s ' % (result, config))
         data = self.new_data()
         data['values'] = {}
+
+        # The ultimate result from the plugin is a dictionary where keys are component ids so
+        #   return a dictionary here with the fileId (not name) as key
+        # result[0] is the complete string returned from the command, like: 
+        #
+        #total 16
+        #-rw-r--r-- 1 jane users  119 Dec  2 17:36 fred1.log_20151110
+        #-rw-r--r-- 1 jane users  559 Dec  2 17:37 fred1.log_20151116
+        #-rw-r--r-- 1 jane users  500 Dec  3 11:09 fred1.log_20151202
+        #drwxr-xr-x 3 jane users 4096 Dec  2 17:38 test
+        #
+        #Use regular expression re module to allocate file sizes to file names
+        # component fileName attribute instance matches last field eg. fred1.log_20151110
+        # 1-or-more non-whitespace char followed by 1-or-more whitspace, 1 or more times
+        #    followed by 1-or-more anything  put into component variable
+        #    followed by end-of-line    ie. last field
+        componentScanner = r'(\S+\s+)+(?P<component>.+)$'
+        # Get 5th field that must be digits
+        # 1-or-more non-whitespace char followed by 1-or-more whitspace, 4 times
+        #    followed by 1-or-more digits  put into lsBytesUsed variable
+        scanners = r'(\S+\s+){4}(?P<lsBytesUsed>[0-9]+)'
+
         for ds in config.datasources:
             log.debug(' Start of config.datasources loop')
-            #result[0] in format:
-            #     952   /opt/zenoss/local/fredtest/fred1.log_20151202
             for l in result[0].split('\n'):
                 if l:
                     try:
-                        k = l.split()[1].split('/')[-1]
-                        v = int(l.split()[0])
-                        # Next line generates an error
-                        #v = int(l.split()[3])
+                        k = re.search(componentScanner, l)
+                        v = re.search(scanners,l)
                     except:
                         raise Exception('In onSuccess - Error gathering %s info.  Result format wrong') % (ds.plugin_classname,)
-                        continue
-                    log.debug('ds.component is %s' % (ds.component))
-                    log.debug(' k is %s and v is %s ' % (k,v))
-                    if ds.component == k:
-                        for datapoint_id in (x.id for x in ds.points):
-                            log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
-                            if datapoint_id not in ['duBytes',]:
-                                continue
-                            dpname = '_'.join((ds.datasource, 'duBytes'))
-                            log.debug('dpname is %s' % (dpname))
-                            data['values'][ds.component] = {dpname : v}
-                            log.debug('data[values] is %s' % (data['values']))
-                            break           # got a match so get out of l loop
+                    if k and v:
+                        k = k.group('component')
+                        v = v.group('lsBytesUsed')
+                        log.debug('ds.component is %s' % (ds.component))
+                        log.debug(' k is %s and v is %s ' % (k,v))
+                        if ds.component == k:
+                            # For each file component, build the dpdict with {dpname: <datapoint value> }
+                            # Currently only one hard-coded datapoint called lsBytesUsed
+                            dpdict = {}
+                            for datapoint_id in (x.id for x in ds.points):
+                                log.debug('In datapoint loop  datapoint_id is %s ' %(datapoint_id))
+                                if datapoint_id not in ['lsBytesUsed',]:
+                                    continue
+                                dpname = '_'.join((ds.datasource, 'lsBytesUsed'))
+                                dpdict[dpname] = v
+                                log.debug('dpname is %s' % (dpname))
+                                log.debug('dpdict is %s' % (dpdict))
+                            data['values'][ds.component] = dpdict
+                            break               # got a match so get out of l loop
 
         log.debug( 'data is %s ' % (data))
         return data
@@ -193,7 +213,7 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         log.debug( 'In onError - result is %s and config is %s ' % (result, config))
         return {
             'events': [{
-                'summary': 'Error getting file du data with zenpython: %s' % result,
+                'summary': 'Error getting file ls data with zenpython: %s' % result,
                 'eventKey': plugin,
                 'severity': 4,
                 }],

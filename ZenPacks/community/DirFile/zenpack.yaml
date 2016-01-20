@@ -190,6 +190,13 @@ classes:
         label_width: 300
         order: 3.1
 
+      bytesUsed:
+        type: int
+        label: Bytes
+        short_label: Bytes
+        label_width: 100
+        order: 3.2
+
     relationships:
       dirFileDevice:
         label: dirFileDevice
@@ -205,7 +212,7 @@ classes:
     # monitoring_templates defaults to File. Also need FileXml, shipped in objects.xml, to
     #   circumnavigate issue whereby custom datasource CommandTemplate appears blank when
     #   shipped in zenpack.yaml
-    monitoring_templates: [File, FileXml, FilePythonXml]  
+    monitoring_templates: [File, FileXml, FilePythonXml, FileStatsPythonXml, FileLsDiskUsedPythonXml, FileStatsParamPythonXml]  
 
     properties:
       fileName:

@@ -17,12 +17,7 @@ class RootDiskFreePythonDeviceData(PythonDataSourcePlugin):
     # List of device attributes you might need to do collection.
     proxy_attributes = (
         'zCommandUsername',
-        'zCommandPassword',
-        'zCommandPath',
-        'zCommandLoginTimeout',
-        'zCommandCommandTimeout',
         'zKeyPath',
-        'zCommandPort',
         )
 
     @classmethod
@@ -40,9 +35,16 @@ class RootDiskFreePythonDeviceData(PythonDataSourcePlugin):
     @inlineCallbacks
     def collect(self, config):
 
+        log.debug('config is %s ' % (config))
+        log.debug('config.datasources is %s ' % (config.datasources))
+        for c in config.datasources:
+            log.debug('config.datasource element is %s ' % (c))
         ds0 = config.datasources[0]
+        for k,v in ds0.__dict__.items():
+            log.debug('ds0 k is %s and v is %s ' % (k,v))
+
         # Get path to executable file, starting from this file
-        #    which is in ZenPack base dir/datasources
+        #    which is in ZenPack base dir/dsplugins
         #    Executables are in ZenPack base dir / libexec
         # NOTE: If using dsplugins directory, then need to go up one to get to libexec
         thisabspath = os.path.dirname(os.path.abspath(__file__))
@@ -54,21 +56,24 @@ class RootDiskFreePythonDeviceData(PythonDataSourcePlugin):
             keyPath = ds0.zKeyPath.replace('~', homedir)
         else:
             keyPath = ds0.zKeyPath
-        # script is df_root_ssh.shh taking 3 parameters, zCommandUsername, keyPath, hostname
-        cmd = [ os.path.join(libexecdir, 'df_root_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.device ]
+        # script is df_root_ssh.shh taking 3 parameters, zCommandUsername, keyPath, host address
+        cmd = [ os.path.join(libexecdir, 'df_root_ssh.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp ]
+        #cmd = [ os.path.join(libexecdir, 'df_root_ssh_bad.sh'), ds0.zCommandUsername, keyPath, ds0.manageIp ]
         log.debug(' cmd is %s \n ' % (cmd) )
 
+        value = None
         try:
             cmd_process = yield(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
             # cmd_process.communicate() returns a tuple of (stdoutdata, stderrordata)
             cmd_stdout, cmd_stderr = cmd_process.communicate()
-            log.info(' stdout is %s and stderr is %s ' % (cmd_stdout, cmd_stderr))
+            log.debug(' stdout is %s and stderr is %s ' % (cmd_stdout, cmd_stderr))
             if not cmd_stderr:
                 value = int(cmd_stdout.rstrip())
             else:    
-                raise Exception(cmd_stderr)
+                raise Exception('%s ' % (cmd_stderr))
         except:    
-            raise Exception('In except clause %s' % (cmd_stderr))
+            log.exception('Error gathering RootDiskFree info - %s ' % (cmd_stderr))
+            raise Exception(' %s' % (cmd_stderr))
         returnValue(value)
 
 
@@ -81,13 +86,11 @@ class RootDiskFreePythonDeviceData(PythonDataSourcePlugin):
         log.debug( 'In success - result is %s and config is %s ' % (result, config))
         data = self.new_data()
         data['values'] = {}
-        ds0 = config.datasources[0]
+        #ds0 = config.datasources[0]
         for ds in config.datasources:
             # We are forcing a single value returned from collect to populate
             # a single known datapoint called dfRootPython
             data['values'][None] = {'dfRootPython' : result}
-        #data['events'] 
-        data['maps'] = []
 
         log.debug( 'data is %s ' % (data))
         return data
