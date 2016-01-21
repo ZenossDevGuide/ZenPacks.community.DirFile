@@ -142,6 +142,7 @@ Monitoring Templates
    
   - Disk_free_df with a single COMMAND datasource to run df_root.sh on remote targets to deliver disk free information, with graph
   - Version 1.0.1 has in addition:  
+
     - DiskFreeDfPython with a single Python datasource that runs the 
       ZenPacks.community.DirFile.dsplugins.RootDiskFreePythonDeviceData plugin, which is driven by 
       df_root_ssh.sh in the libexec directory.
@@ -171,6 +172,7 @@ Monitoring Templates
       count of lines containing "test 1", where search string is supplied in template GUI, with graph
 
   - Version 1.0.1 has in addition:  
+
     - FilePythonXml, with a single Python datasource that runs the 
       ZenPacks.community.DirFile.dsplugins.FileDiskUsedPythonDeviceData plugin, which is driven by
       dufile_ssh.sh in the libexec directory
