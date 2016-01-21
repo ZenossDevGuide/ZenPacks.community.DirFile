@@ -97,6 +97,7 @@ Device and component object classes
   - monitoring_templates set to [File, FileXml] where File is shipped as part of zenpack.yaml and
     FileXml, containing custom datasource metrics, is shipped in objects.xml.  
   - For version 1.0.1:
+
       - monitoring_templates set to [File, FileXml, FilePythonXml, FileStatsPythonXml, FileLsDiskUsedPythonXml, FileStatsParamPythonXml] 
          where File is shipped as part of zenpack.yaml and the rest are shipped in objects.xml.  
 
