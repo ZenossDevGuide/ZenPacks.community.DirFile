@@ -13,6 +13,10 @@ Directories and files are specified as zProperties.
 
 This version of the ZenPack uses zenpacklib and is version 1.0.0 in the master git branch.
 
+This ZenPack is not intended as production-level code.  It provides detailed examples and
+explanations of ZenPack building techniques.  It is designed to have extremely trivial setup
+requirements on monitored devices, at the expense of  performance and efficiency.
+
 zenpacklib usage
 ----------------
 
@@ -59,7 +63,7 @@ Device and component object classes
   - fileDirName
   - fileRegex
   - monitoring_templates set to [File, FileXml] where File is shipped as part of zenpack.yaml and
-    FileXml, containing custom datasource netries, is shipped in objects.xml.  
+    FileXml, containing custom datasource metrics, is shipped in objects.xml.  
 
 where DirFileDevice -> contains many Dir components -> contains many File components
 
@@ -82,6 +86,9 @@ There is no device-level modeler.
 
   - Directories
   - Files within the associated directory that match the regex expression
+
+Note that, as shipped, the DirFileMap modeler is restricted to searching directories under
+/opt/zenoss/local ; this is for performance reasons.
 
 
 Monitoring Templates
@@ -140,8 +147,55 @@ potentially overridden for specific devices.
 Ensure that suitable values for zCommandUsername, zCommandPassword, zKeyPath and zCommandPath are customised for the device class
 and potentially overridden for specific devices.
 
-bash scripts for the command templates are shipped in the libexec directory of the ZenPack.  These should be delivered 
-to the correct directory on target systems.
+Test ssh communications from the command line before expecting Zenoss to perform successful ssh communications.
+
+Some command templates require bash scripts to be installed on remote targets.  These are shipped in the 
+libexec directory of the ZenPack and should be transferred to remote devices using local methods (ftp, scp, Chef, puppet, ...).
+On the targets, the scripts need to be in the directory specified by zCommandPath for the device. The scripts must be executable
+by the user specified in the device's zCommandUsername property.
+
+* df_root.sh
+* file_stats.sh
+* file_stats_param.sh  
+
+Test files
+----------
+
+It is recommended that the ZenPack be tested against a small number of devices, each having a small
+number of test files.
+
+Note that the modeler plugin, as shipped, will *only* search for files and directories under the /opt/zenoss/local
+directory hierarchy.
+
+The ZenPack was tested against the following test hierarchy::
+
+
+        zenplug@bino:/opt/zenoss/local/fredtest> ls -l *
+        -rw-r--r-- 1 jane users  126 Jan 14 14:40 fred1.log_20151110
+        -rw-r--r-- 1 jane users  434 Jan 14 14:40 fred1.log_20151116
+        -rw-r--r-- 1 jane users 1047 Jan 14 14:41 fred1.log_20151202
+        -rw-r--r-- 1 jane users  961 Jan 18 19:10 fred1.log_20160118
+
+        test:
+        total 12
+        -rw-r--r-- 1 jane users  499 Dec  2 17:38 fred2.log_20151124
+        -rw-r--r-- 1 jane users  499 Dec  3 19:17 fred2.log_20151125
+        drwxr-xr-x 2 jane users 4096 Nov 29 18:17 lowertest
+        zenplug@bino:/opt/zenoss/local/fredtest> 
+
+where each file has a number of lines containing "test 1" and "without", the search strings that are
+hard-coded into some of the datasource examples.
+
+Note that the directories must have read and execute access for the zCommandUsername and the files
+must have read access.
+
+The DirFile zProperties used for testing were::
+
+        zMonitorDir1 /opt/zenoss/local/fredtest
+        zMonitorDir1File fred1.*
+        zMonitorDir3 /opt/zenoss/local/fredtest/test
+        zMonitorDir3File fred2\.log.*
+
 
 
 Requirements & Dependencies
@@ -166,8 +220,8 @@ Requirements & Dependencies
     and then rerun the test above.
 
 * ZenPacks:
+  - ZenPacks.zenoss.PythonCollector >= 1.6   
 
-  - ZenPacks.zenoss.PythonCollector >= 1.6
 
 * Installation Notes: 
 
@@ -197,7 +251,7 @@ To install in development mode, find the repository on github and use the *Downl
 Device Support
 ==============
 
-This ZenPack only requires very basic Unix commands on the traget devices.
+This ZenPack only requires very basic Unix commands on the target devices.
 
 Limitations and Troubleshooting
 ===============================
@@ -217,7 +271,7 @@ Change History
 * 1.0.0
    - Initial Release
 * 1.0.1
-   - Initial Release with PythonCollector
+   - Initial Release for PythonCollector
 
 
 Screenshots
