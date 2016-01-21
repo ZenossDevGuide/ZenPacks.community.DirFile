@@ -167,7 +167,7 @@ number of test files.
 Note that the modeler plugin, as shipped, will *only* search for files and directories under the /opt/zenoss/local
 directory hierarchy.
 
-The ZenPack was tested against the following test hierarchy:
+The ZenPack was tested against the following test hierarchy::
 
 
         zenplug@bino:/opt/zenoss/local/fredtest> ls -l *
@@ -189,7 +189,7 @@ hard-coded into some of the datasource examples.
 Note that the directories must have read and execute access for the zCommandUsername and the files
 must have read access.
 
-The DirFile zProperties used for testing were:
+The DirFile zProperties used for testing were::
 
         zMonitorDir1 /opt/zenoss/local/fredtest
         zMonitorDir1File fred1.*
