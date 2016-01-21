@@ -151,6 +151,7 @@ Monitoring Templates
 
   - Dir with a single COMMAND datasource to gather disk usage (du) information for the directory, with graph
   - Version 1.0.1 has in addition:  
+
     - DirPythonXml with a single Python datasource that runs the 
       ZenPacks.community.DirFile.dsplugins.DirDiskUsedPythonDeviceData plugin, which is driven by
       dudir_ssh.sh in the libexec directory
