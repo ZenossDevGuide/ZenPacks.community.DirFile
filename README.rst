@@ -6,22 +6,49 @@ ZenPacks.community.DirFile
 Description
 ===========
 This ZenPack monitors particular directories and files within those directories for
-existence and size.  It uses COMMAND bash scripts for both modeling and performance
+existence and size.  
+
+Version 1.0.0 in the master branch uses COMMAND bash scripts for both modeling and performance
 data collection.
+
+Version 1.0.1 does not remove any of the COMMAND modeling or data collection but, in addition,
+demonstrates converting the COMMAND functionality to use with the PythonCollector ZenPack.
 
 Directories and files are specified as zProperties.
 
-This version of the ZenPack uses zenpacklib and is version 1.0.0 in the master git branch.
+This version of the ZenPack uses zenpacklib and is version 1.0.1 in the python git branch.
 
 This ZenPack is not intended as production-level code.  It provides detailed examples and
 explanations of ZenPack building techniques.  It is designed to have extremely trivial setup
 requirements on monitored devices, at the expense of  performance and efficiency.
 
+Updates for Version 1.0.1 using Python modeler and data collection
+------------------------------------------------------------------
+
+There is a Python modeler plugin in addition to the COMMAND one under modeler/plugins/community/python.
+
+Several PythonDataSourcePlugins are shipped in the dsplugins directory.  There is also a 
+Python datasource in the datasources directory.
+
+Extra shellscripts are provided in the libexec directory to run ssh commands to remote targets. No
+change is required of setup or scripts on remote targets if version 1.0.0 is already deployed.
+
+New Python performance templates are shipped in objects.xml. 
+
+zenpack.yaml updates:
+
+* The zDeviceTemplates attribute of the /Server/Linux/DirFile class is updated to include DiskFreeDfPython. 
+* The zCollectorPlugins attribute of the /Server/Linux/DirFile class has 'community.python.DirFilePythonMap',
+  not 'community.cmd.DirFileMap'
+* The Dir component has monitoring_templates: [Dir, DirPythonXml]
+* The File component has monitoring_templates: [File, FileXml, FilePythonXml, FileStatsPythonXml, FileLsDiskUsedPythonXml, FileStatsParamPythonXml]
+
+
 zenpacklib usage
 ----------------
 
 This ZenPack is built with the zenpacklib library so does not have explicit code definitions for
-device classes, device and component objects or zProperties.  Templates are also created through zenpacklib.
+device classes, device and component objects or zProperties.  Some templates are also created through zenpacklib.
 These elements are all created through the zenpack.yaml file in the main directory of the ZenPack.
 See http://zenpacklib.zenoss.com/en/latest/index.html for more information on zenpacklib.
 
@@ -43,9 +70,10 @@ zenpacklib creates */Server/Linux/DirFile* with:
 * zDeviceTemplates:
 
   - Disk_free_df
+  - Disk_free_dfPython          (version 1.0.1 Python version only)
   - Device
 
-* zCollectorPlugins: ['zenoss.snmp.NewDeviceMap', 'zenoss.snmp.DeviceMap', 'HPDeviceMap', 'DellDeviceMap', 'zenoss.snmp.InterfaceMap', 'zenoss.snmp.RouteMap', 'zenoss.snmp.IpServiceMap', 'zenoss.snmp.HRFileSystemMap', 'zenoss.snmp.HRSWRunMap', 'zenoss.snmp.CpuMap', 'HPCPUMap', 'DellCPUMap', 'DellPCIMap', 'zenoss.snmp.SnmpV3EngineIdMap', 'community.cmd.DirFileDeviceMap', 'community.cmd.DirFileMap']
+* zCollectorPlugins: ['zenoss.snmp.NewDeviceMap', 'zenoss.snmp.DeviceMap', 'HPDeviceMap', 'DellDeviceMap', 'zenoss.snmp.InterfaceMap', 'zenoss.snmp.RouteMap', 'zenoss.snmp.IpServiceMap', 'zenoss.snmp.HRFileSystemMap', 'zenoss.snmp.HRSWRunMap', 'zenoss.snmp.CpuMap', 'HPCPUMap', 'DellCPUMap', 'DellPCIMap', 'zenoss.snmp.SnmpV3EngineIdMap', 'community.cmd.DirFileDeviceMap', 'community.python.DirFilePythonMap']
 * Several templates are created accessible by this class
 
 
@@ -56,6 +84,10 @@ Device and component object classes
 * Dir component class with attributes:
 
   - dirName
+  - bytesUsed          (version 1.0.1 Python version only)  
+  - For version 1.0.1:
+    - monitoring_templates set to [Dir, DirPythonXml] 
+      where Dir is shipped in zenpack.yaml and DirPythonXml is shipped in objects.xml
 
 * File component with attributes:
 
@@ -64,8 +96,12 @@ Device and component object classes
   - fileRegex
   - monitoring_templates set to [File, FileXml] where File is shipped as part of zenpack.yaml and
     FileXml, containing custom datasource metrics, is shipped in objects.xml.  
+  - For version 1.0.1:
+      - monitoring_templates set to [File, FileXml, FilePythonXml, FileStatsPythonXml, FileLsDiskUsedPythonXml, FileStatsParamPythonXml] 
+         where File is shipped as part of zenpack.yaml and the rest are shipped in objects.xml.  
 
-where DirFileDevice -> contains many Dir components -> contains many File components
+Relationships are:
+  * DirFileDevice -> contains many Dir components -> contains many File components
 
 Properties
 ----------
@@ -82,13 +118,21 @@ Modeler Plugins
 
 There is no device-level modeler.
 
-* DirFileMap which populates:
+* DirFileMap in modeler/plugins/community/cmd, a COMMAND modeler which populates:
 
   - Directories
   - Files within the associated directory that match the regex expression
 
+* DirFilePythonMap in modeler/plugins/community/Python, a Python modeler which does
+  exactly the same job, populating:
+
+  - Directories
+  - Files within the associated directory that match the regex expression
+  - Populates the bytesUsed attribute of Dir for version 1.0.1  
+
 Note that, as shipped, the DirFileMap modeler is restricted to searching directories under
-/opt/zenoss/local ; this is for performance reasons.
+/opt/zenoss/local ; this is for performance reasons. The DirFilPythonMap modeler is *not* subject
+to similar restrictions.
 
 
 Monitoring Templates
@@ -97,10 +141,20 @@ Monitoring Templates
 * Device templates
    
   - Disk_free_df with a single COMMAND datasource to run df_root.sh on remote targets to deliver disk free information, with graph
+  - Version 1.0.1 has in addition:  
+    - DiskFreeDfPython with a single Python datasource that runs the 
+      ZenPacks.community.DirFile.dsplugins.RootDiskFreePythonDeviceData plugin, which is driven by 
+      df_root_ssh.sh in the libexec directory.
+    - Graph title denotes Python collection  
 
 * Component templates
 
   - Dir with a single COMMAND datasource to gather disk usage (du) information for the directory, with graph
+  - Version 1.0.1 has in addition:  
+    - DirPythonXml with a single Python datasource that runs the 
+      ZenPacks.community.DirFile.dsplugins.DirDiskUsedPythonDeviceData plugin, which is driven by
+      dudir_ssh.sh in the libexec directory
+
   - File with several COMMAND datasources (shipped in zenpack.yaml):
 
     - FileDiskUsed - uses du on remote target, passing filename as parameter, with graph
@@ -115,12 +169,27 @@ Monitoring Templates
     - test_1 - runs remote file_stats_param.sh through a Zenapck-delivered datasource, *DirFileDataSource*, to gather 
       count of lines containing "test 1", where search string is supplied in template GUI, with graph
 
+  - Version 1.0.1 has in addition:  
+    - FilePythonXml, with a single Python datasource that runs the 
+      ZenPacks.community.DirFile.dsplugins.FileDiskUsedPythonDeviceData plugin, which is driven by
+      dufile_ssh.sh in the libexec directory
+    - FileLsDiskUsedPythonXml, with a single Python datasource that runs the 
+      ZenPacks.community.DirFile.dsplugins.LsFileDiskUsedPythonDeviceData plugin, which is driven by
+      lsFileDiskUsed_ssh.sh in the libexec directory
+    - FileStatsPythonXml, with a single Python datasource that runs the 
+      ZenPacks.community.DirFile.dsplugins.FileStatsPythonDeviceData plugin, which is driven by
+      file_stats_ssh.sh in the libexec directory
+
+
 
 Datasources
 -----------
 
 DirFileDataSource to supply customised datasource GUI to specify a search string for file matching.  The CommandPlugin
 method is used to collect the data.
+
+Version 1.0.1 also has DirFilePythonDataSource which performs a similar task, driven by file_stats_param_ssh.sh
+in the libexec directory.
 
 Parsers
 -------
@@ -157,6 +226,8 @@ by the user specified in the device's zCommandUsername property.
 * df_root.sh
 * file_stats.sh
 * file_stats_param.sh  
+
+The remote scripts are identical, regardless of the version of ZenPack deployed.
 
 Test files
 ----------
