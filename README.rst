@@ -170,18 +170,18 @@ directory hierarchy.
 The ZenPack was tested against the following test hierarchy:
 
 
-zenplug@bino:/opt/zenoss/local/fredtest> ls -l *
--rw-r--r-- 1 jane users  126 Jan 14 14:40 fred1.log_20151110
--rw-r--r-- 1 jane users  434 Jan 14 14:40 fred1.log_20151116
--rw-r--r-- 1 jane users 1047 Jan 14 14:41 fred1.log_20151202
--rw-r--r-- 1 jane users  961 Jan 18 19:10 fred1.log_20160118
+        zenplug@bino:/opt/zenoss/local/fredtest> ls -l *
+        -rw-r--r-- 1 jane users  126 Jan 14 14:40 fred1.log_20151110
+        -rw-r--r-- 1 jane users  434 Jan 14 14:40 fred1.log_20151116
+        -rw-r--r-- 1 jane users 1047 Jan 14 14:41 fred1.log_20151202
+        -rw-r--r-- 1 jane users  961 Jan 18 19:10 fred1.log_20160118
 
-test:
-total 12
--rw-r--r-- 1 jane users  499 Dec  2 17:38 fred2.log_20151124
--rw-r--r-- 1 jane users  499 Dec  3 19:17 fred2.log_20151125
-drwxr-xr-x 2 jane users 4096 Nov 29 18:17 lowertest
-zenplug@bino:/opt/zenoss/local/fredtest> 
+        test:
+        total 12
+        -rw-r--r-- 1 jane users  499 Dec  2 17:38 fred2.log_20151124
+        -rw-r--r-- 1 jane users  499 Dec  3 19:17 fred2.log_20151125
+        drwxr-xr-x 2 jane users 4096 Nov 29 18:17 lowertest
+        zenplug@bino:/opt/zenoss/local/fredtest> 
 
 where each file has a number of lines containing "test 1" and "without", the search strings that are
 hard-coded into some of the datasource examples.
@@ -191,10 +191,10 @@ must have read access.
 
 The DirFile zProperties used for testing were:
 
-zMonitorDir1 /opt/zenoss/local/fredtest
-zMonitorDir1File fred1.*
-zMonitorDir3 /opt/zenoss/local/fredtest/test
-zMonitorDir3File fred2\.log.*
+        zMonitorDir1 /opt/zenoss/local/fredtest
+        zMonitorDir1File fred1.*
+        zMonitorDir3 /opt/zenoss/local/fredtest/test
+        zMonitorDir3File fred2\.log.*
 
 
 
