@@ -214,6 +214,7 @@ class LsFileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         return {
             'events': [{
                 'summary': 'Error getting file ls data with zenpython: %s' % result,
+                'eventClass': '/DirFile',
                 'eventKey': plugin,
                 'severity': 4,
                 }],

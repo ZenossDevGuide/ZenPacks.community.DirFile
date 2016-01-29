@@ -118,6 +118,7 @@ class RootDiskFreePythonDeviceData(PythonDataSourcePlugin):
         return {
             'events': [{
                 'summary': 'Error getting root df data with zenpython: %s' % result,
+                'eventClass': '/DirFile',
                 'eventKey': 'RootDiskFreePythonDeviceData',
                 'severity': 4,
                 }],

@@ -199,6 +199,7 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         return {
             'events': [{
                 'summary': 'Error getting directory du data with zenpython: %s' % result,
+                'eventClass': '/DirFile',
                 'eventKey': 'DirDiskUsedPythonDeviceData',
                 'severity': 4,
                 }],

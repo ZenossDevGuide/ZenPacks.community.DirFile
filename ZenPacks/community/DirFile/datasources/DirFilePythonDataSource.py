@@ -214,6 +214,7 @@ class DirFilePythonDataSourcePlugin(PythonDataSourcePlugin):
         return {
             'events': [{
                 'summary': 'Error getting file stats data with zenpython DirFilePythonDataSource: %s' % result,
+                'eventClass': '/DirFile',
                 'eventKey': plugin,
                 'severity': 4,
                 }],

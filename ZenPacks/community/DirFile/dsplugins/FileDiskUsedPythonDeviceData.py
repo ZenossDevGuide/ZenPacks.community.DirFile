@@ -194,6 +194,7 @@ class FileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         return {
             'events': [{
                 'summary': 'Error getting file du data with zenpython: %s' % result,
+                'eventClass': '/DirFile',
                 'eventKey': plugin,
                 'severity': 4,
                 }],

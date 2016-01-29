@@ -155,6 +155,7 @@ class FileStatsPythonDeviceData(PythonDataSourcePlugin):
         return {
             'events': [{
                 'summary': 'Error getting file stats data with zenpython: %s' % result,
+                'eventClass': '/DirFile',
                 'eventKey': plugin,
                 'severity': 4,
                 }],
