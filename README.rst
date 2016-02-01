@@ -14,6 +14,8 @@ data collection.
 Version 1.0.1 does not remove any of the COMMAND modeling or data collection but, in addition,
 demonstrates converting the COMMAND functionality to use with the PythonCollector ZenPack.
 
+Version 1.0.2 adds triggers and notifications for events.
+
 Directories and files are specified as zProperties.
 
 This version of the ZenPack uses zenpacklib and is version 1.0.1 in the python git branch.
@@ -357,7 +359,7 @@ See the screenshots directory.
 
 .. External References Below. Nothing Below This Line Should Be Rendered
 
-.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/python/dist/ZenPacks.community.DirFile-1.0.1-py2.7.egg?raw=true
+.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/events/dist/ZenPacks.community.DirFile-1.0.2-py2.7.egg?raw=true
 
 Acknowledgements
 ================
