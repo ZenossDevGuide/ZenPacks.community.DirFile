@@ -1,0 +1,41 @@
+{
+    "triggers": [
+        {
+            "name": "Important_File_Dir",
+            "uuid": "4e3e0260-9f80-412b-989c-d23c26875c92",
+            "enabled": true,
+            "rule": {
+                "api_version": 1,
+                "source": "(dev.production_state == 1000) and (evt.severity >= 4) and (evt.event_class.startswith(\"/DirFile\")) and (evt.status == 0) and (fileDirName.startswith(\"/opt/zenoss/local/fredtest\"))",
+                "type": 1
+            }
+        }
+    ],
+    "notifications": [
+        {
+            "id": "Important_File_Dir_Email",
+            "description": "File error in important directory",
+            "guid": "45b85f59-9d6a-4eba-a4b4-66d5393e6403",
+            "action": "email",
+            "enabled": true,
+            "action_timeout": 60,
+            "delay_seconds": 0,
+            "repeat_seconds": 0,
+            "send_initial_occurrence": true,
+            "send_clear": false,
+            "subject_format": "[zenoss] ${evt/device} ${evt/summary}",
+            "body_content_type": "html",
+            "body_format": "\nDevice: ${evt/device}\nComponent: ${evt/component}\nSeverity: ${evt/severity}\nTime: ${evt/lastTime}\nMessage:\n${evt/message}\n<a href=\"${urls/eventUrl}\">Event Detail</a>\n<a href=\"${urls/ackUrl}\">Acknowledge</a>\n<a href=\"${urls/closeUrl}\">Close</a>\n<a href=\"${urls/eventsUrl}\">Device Events</a>\n",
+            "email_from": "zenoss@skills-1st.co.uk",
+            "host": "mailhub.ourshack.com",
+            "port": "587",
+            "useTls": 1,
+            "user": "s1bjc",
+            "password": "notthis",
+            "recipients": [],
+            "subscriptions": ["4e3e0260-9f80-412b-989c-d23c26875c92"]
+        }
+    ]
+}
+
+

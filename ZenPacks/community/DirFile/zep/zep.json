@@ -1,0 +1,24 @@
+{
+    "EventDetailItem": [
+        {
+            "key": "ZenPacks.community.DirFile.fileDirName",
+            "type": "1",
+            "name": "File Directory FQN"
+        },
+        {
+            "key": "ZenPacks.community.DirFile.fileRegex",
+            "type": "1",
+            "name": "Regex FQN"
+        },
+        {
+            "key": "fileDirName",
+            "type": "1",
+            "name": "File Directory"
+        },
+        {
+            "key": "fileRegex",
+            "type": "1",
+            "name": "Regex"
+        }
+    ]
+}

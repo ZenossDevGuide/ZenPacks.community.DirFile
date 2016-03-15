@@ -138,6 +138,17 @@ class FileStatsPythonDeviceData(PythonDataSourcePlugin):
                     log.debug('dpdict is %s' % (dpdict))
                 data['values'][ds.component] = dpdict
 
+            # onSuccess will generate a Clear severity event to auto-close any previous error events
+            data['events'].append({
+                        'device': ds.device,
+                        'component': ds.component,
+                        'summary': 'Success getting file stats data with zenpython',
+                        'severity': 0,
+                        'eventClass': '/DirFile',
+                        'eventKey': ds.plugin_classname.split('.')[-1],
+                        })
+
+
         log.debug( 'data is %s ' % (data))
         return data
 
@@ -158,6 +169,7 @@ class FileStatsPythonDeviceData(PythonDataSourcePlugin):
                 'eventClass': '/DirFile',
                 'eventKey': plugin,
                 'severity': 4,
+                'component': ds0.component,
                 }],
             }
 

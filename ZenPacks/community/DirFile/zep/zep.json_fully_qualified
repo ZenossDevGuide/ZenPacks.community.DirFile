@@ -1,0 +1,14 @@
+{
+    "EventDetailItem": [
+        {
+            "key": "ZenPacks.community.DirFile.fileDirName",
+            "type": "1",
+            "name": "File Directory"
+        },
+        {
+            "key": "ZenPacks.community.DirFile.fileRegex",
+            "type": "1",
+            "name": "Regex"
+        }
+    ]
+}

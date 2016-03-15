@@ -1,0 +1,32 @@
+{
+    "triggers": [
+        {
+            "name": "Important_File_Dir",
+            "uuid": "4e3e0260-9f80-412b-989c-d23c26875c92",
+            "enabled": false,
+            "rule": {
+                "api_version": 1,
+                "source": "(dev.production_state == 1000) and (evt.severity >= 4) and (evt.event_class.startswith(\"/DirFile\")) and (evt.status == 0) and (fileDirName.startswith(\"/opt/zenoss/local/fredtest\"))",
+                "type": 1
+            }
+        }
+    ],
+    "notifications": [
+        {
+            "id": "Important_File_Dir_Email",
+            "description": "File errorin important directory",
+            "guid": "45b85f59-9d6a-4eba-a4b4-66d5393e6403",
+            "action": "email",
+            "enabled": true,
+            "action_timeout": 60,
+            "delay_seconds": 0,
+            "repeat_seconds": 0,
+            "send_initial_occurrence": true,
+            "send_clear": true,
+            "recipients": [],
+            "subscriptions": ["4e3e0260-9f80-412b-989c-d23c26875c92"]
+        }
+    ]
+}
+
+

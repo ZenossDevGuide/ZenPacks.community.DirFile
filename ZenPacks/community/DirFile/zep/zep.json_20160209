@@ -1,0 +1,14 @@
+{
+    "EventDetailItem": [
+        {
+            "key": "fileDirName",
+            "type": "1",
+            "name": "File Directory"
+        },
+        {
+            "key": "fileRegex",
+            "type": "1",
+            "name": "Regex"
+        }
+    ]
+}
