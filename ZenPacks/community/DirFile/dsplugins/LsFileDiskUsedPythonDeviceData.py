@@ -197,6 +197,17 @@ class LsFileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
                             data['values'][ds.component] = dpdict
                             break               # got a match so get out of l loop
 
+            # onSuccess will generate a Clear severity event to auto-close any previous error events
+            data['events'].append({
+                        'device': ds.device,
+                        'component': ds.component,
+                        'summary': 'Success getting file ls data with zenpython',
+                        'severity': 0,
+                        'eventClass': '/DirFile',
+                        'eventKey': ds.plugin_classname.split('.')[-1],
+                        })
+
+
         log.debug( 'data is %s ' % (data))
         return data
 
@@ -217,6 +228,7 @@ class LsFileDiskUsedPythonDeviceData(PythonDataSourcePlugin):
                 'eventClass': '/DirFile',
                 'eventKey': plugin,
                 'severity': 4,
+                'component': ds0.component,
                 }],
             }
 

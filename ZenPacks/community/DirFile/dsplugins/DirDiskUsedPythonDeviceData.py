@@ -175,6 +175,17 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
                             log.debug('data[values] is %s' % (data['values']))
                             break           # got a match so get out of l loop
 
+            # onSuccess will generate a Clear severity event to auto-close any previous error events
+            data['events'].append({
+                        'device': ds.device,
+                        'component': ds.component,
+                        'summary': 'Success getting Dudir data with zenpython',
+                        'severity': 0,
+                        'eventClass': '/DirFile',
+                        'eventKey': ds.plugin_classname.split('.')[-1],
+                        })
+
+
         # onSuccess will generate a Debug severity event - just to prove we can!
         data['events'].append({
                     'device': config.id,
@@ -183,6 +194,7 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
                     'eventClass': '/App',
                     'eventKey': 'DirDiskUsedPythonDeviceData',
                     })
+
 
         log.debug( 'data is %s ' % (data))
         return data
@@ -195,13 +207,16 @@ class DirDiskUsedPythonDeviceData(PythonDataSourcePlugin):
         method to be used without further processing. It recommended to
         implement this method to capture errors.
         """
+        ds0 = config.datasources[0]
+        plugin = ds0.plugin_classname.split('.')[-1]
         log.debug( 'In onError - result is %s and config is %s ' % (result, config))
         return {
             'events': [{
                 'summary': 'Error getting directory du data with zenpython: %s' % result,
                 'eventClass': '/DirFile',
-                'eventKey': 'DirDiskUsedPythonDeviceData',
+                'eventKey': plugin,
                 'severity': 4,
+                'component': ds0.component,
                 }],
             }
 

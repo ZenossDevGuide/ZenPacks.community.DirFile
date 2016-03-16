@@ -103,6 +103,16 @@ class RootDiskFreePythonDeviceData(PythonDataSourcePlugin):
             # a single known datapoint called dfRootPython
             data['values'][None] = {'dfRootPython' : result}
 
+            # onSuccess will generate a Clear severity event to auto-close any previous error events
+            data['events'].append({
+                        'device': ds.device,
+                        'summary': 'Success getting root df data with zenpython',
+                        'severity': 0,
+                        'eventClass': '/DirFile',
+                        'eventKey': 'RootDiskFreePythonDeviceData',
+                        })
+
+
         log.debug( 'data is %s ' % (data))
         return data
 
