@@ -351,6 +351,8 @@ Change History
    - Initial Release
 * 1.0.1
    - Initial Release for PythonCollector
+* 1.0.2
+   - With events added
 
 
 Screenshots
