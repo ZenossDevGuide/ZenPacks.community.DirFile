@@ -223,6 +223,8 @@ Ensure that suitable values for zCommandUsername, zCommandPassword, zKeyPath and
 and potentially overridden for specific devices.
 
 Test ssh communications from the command line before expecting Zenoss to perform successful ssh communications.
+Note for Zenoss 5, the initial standalone ssh test must be from the zencommand container in order to insert an
+entry in the .ssh/known_hosts file for the zenoss user.
 
 Some command templates require bash scripts to be installed on remote targets.  These are shipped in the 
 libexec directory of the ZenPack and should be transferred to remote devices using local methods (ftp, scp, Chef, puppet, ...).

@@ -30,8 +30,8 @@
             "host": "mailhub.ourshack.com",
             "port": "587",
             "useTls": 1,
-            "user": "s1bjc",
-            "password": "notthis",
+            "user": "notthis",
+            "password": "notthiseither",
             "recipients": [],
             "subscriptions": ["4e3e0260-9f80-412b-989c-d23c26875c92"]
         }

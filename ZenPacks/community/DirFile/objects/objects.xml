@@ -58,10 +58,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -161,10 +161,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -264,10 +264,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -367,10 +367,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -509,10 +509,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -569,10 +569,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -680,10 +680,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -740,10 +740,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -894,10 +894,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
@@ -954,10 +954,10 @@ False
 False
 </property>
 <property type="int" id="miny" mode="w" >
--1
+None
 </property>
 <property type="int" id="maxy" mode="w" >
--1
+None
 </property>
 <property type="boolean" id="hasSummary" mode="w" >
 True
