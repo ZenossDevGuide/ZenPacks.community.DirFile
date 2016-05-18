@@ -38,41 +38,56 @@ class DirFileMap(CommandPlugin):
             'zMonitorDir2File',
             'zMonitorDir3File',
         )
+
     # The command to run.
-    # Get directories (one per line) then a line with __SPLIT__ then files (one per line)
-    # Beware this has potential to return LOTS of data
+    # For each zMonitorDir parameter, check whether dir exists and get
+    #    all files imeediately under that directory, chopping off directory prefix
+
+    # Note that we're using TALES in the command. Normally that's NOT
+    # possible. Check out the monkeypatch of CollectorClient.__init__ method
+    # in this ZenPack's __init__.py to see what makes it possible.
+    
     command = (
-            'find /opt/zenoss/local -type d ;'
-            #'find / -type d ;'
-            'echo __SPLIT__; '
-            'find /opt/zenoss/local -type f'
-            #'find / -type f'
+            'if [ -d ${here/zMonitorDir1} ]  >/dev/null 2>&1; then '
+              'echo ${here/zMonitorDir1};'
+              'find ${here/zMonitorDir1} -maxdepth 1 -type f | awk -F\/ \'{print $$NF}\';'
+              'echo __SPLIT__;'
+            'fi;'
+            'if [ -d ${here/zMonitorDir2} ]  >/dev/null 2>&1; then '
+              'echo ${here/zMonitorDir2};'
+              'find ${here/zMonitorDir2} -maxdepth 1 -type f | awk -F\/ \'{print $$NF}\';'
+              'echo __SPLIT__;'
+            'fi;'
+            'if [ -d ${here/zMonitorDir3} ]  >/dev/null 2>&1; then '
+              'echo ${here/zMonitorDir3};'
+              'find ${here/zMonitorDir3} -maxdepth 1 -type f | awk -F\/ \'{print $$NF}\';'
+            'fi'
             )
 
     def process(self, device, results, log):
         log.info("Modeler %s processing data for device %s",
             self.name(), device.id)
         #log.debug('results is %s ' % (results))
-
-        # Create dictionary where key is directory and value is file regex
-        dirRegex = {}
-        if device.zMonitorDir1:
-            if device.zMonitorDir1File:
-                dirRegex[device.zMonitorDir1.rstrip('/')] = device.zMonitorDir1File
-            else:    
-                dirRegex[device.zMonitorDir1.rstrip('/')] = None
-        if device.zMonitorDir2:
-            if device.zMonitorDir2File:
-                dirRegex[device.zMonitorDir2.rstrip('/')] = device.zMonitorDir2File
-            else:    
-                dirRegex[device.zMonitorDir2.rstrip('/')] = None
-        if device.zMonitorDir3:
-            if device.zMonitorDir3File:
-                dirRegex[device.zMonitorDir3.rstrip('/')] = device.zMonitorDir3File
-            else:    
-                dirRegex[device.zMonitorDir3.rstrip('/')] = None
-
         #log.info(' dirRegex is %s ' % (dirRegex))
+
+	# Create dictionary where key is directory and value is file regex
+	# Check zMonitorDir properties are fully qualified
+	dirRegex = {}
+	if device.zMonitorDir1 and device.zMonitorDir1.startswith('/'):
+	    if device.zMonitorDir1File:
+		dirRegex[device.zMonitorDir1.rstrip('/')] = device.zMonitorDir1File
+	    else:    
+		dirRegex[device.zMonitorDir1.rstrip('/')] = None
+	if device.zMonitorDir2 and device.zMonitorDir2.startswith('/'):
+	    if device.zMonitorDir2File:
+		dirRegex[device.zMonitorDir2.rstrip('/')] = device.zMonitorDir2File
+	    else:    
+		dirRegex[device.zMonitorDir2.rstrip('/')] = None
+	if device.zMonitorDir3 and device.zMonitorDir3.startswith('/'):
+	    if device.zMonitorDir3File:
+		dirRegex[device.zMonitorDir3.rstrip('/')] = device.zMonitorDir3File
+	    else:    
+		dirRegex[device.zMonitorDir3.rstrip('/')] = None
 
         # Setup an ordered collection of dictionaries to return data to the ApplyDataMap routine of zenmodeler
         maps = collections.OrderedDict([
@@ -85,31 +100,56 @@ class DirFileMap(CommandPlugin):
         # For CommandPlugin, the results parameter to the process method will
         # be a string containing all output from the command defined above.
         # 
-        # /opt/zenoss/local
-        # /opt/zenoss/local/fredtest
-        # __SPLIT--
-        # /opt/zenoss/local/fredtest/fred2.log_20151123
-        # /opt/zenoss/local/fredtest/fred2.log_20151124
+        #/opt/zenoss/local/fredtest
+	#fred2.log_20160506
+	#fred1.log_20160510
+	#fred1.log_20160506
+	#fred1.log_20160511
+	#__SPLIT__
+	#/opt/zenoss/local/fredtest/test
+	#fred2.log_20160506
+	#fred1.log_20160510
+	#fred1.log_20160506
+	#fred2.log_201605011
+	#fred2.log_201605010
+	#fred1.log_20160511
 
-        # dirlines [0] = dirs  [1] = files
+        # Delivers upto 3 dirlines, one per zProperty
         dirlines = results.split('__SPLIT__')
-        for dir in dirlines[0].split('\n'):
-            # Check for a dir matching a directory in our dirRegex lookup dictionary
-            if dir in dirRegex.keys():
-                dir_id = prepId(dir)
-                # Add an Object Map for this directory 
-                # Use prepId to ensure id is unique and doesn't include any dodgy characters like /
-                # om = self.objectMap() inherits modname and compname (null) from plugin
-                om = self.objectMap()
-                om.id = dir_id
-                om.dirName = dir
-                for k,v in om.items():
-                    log.debug('dir om key is %s and value is %s' % (k, v))
-                rm.append(om)
-                # For this directory, create a map for associated files, passing this dir_id as part of compname
-                fm = (self.getFileMap( device, dirlines[1], dirRegex, dir, 'dirs/%s' % dir_id, log))
-                log.debug('dir %s has fm  %s \n fm relname is %s and fm compname is %s ' % (om.id, fm, fm.relname, fm.compname))
-                maps['files'].append(fm)
+        for dirline in dirlines:
+            dirFiles = dirline.split('\n')
+            #log.debug('dirFiles is %s ' % (dirFiles))
+            # Seem to get a null string as first element. If so, discard
+            # Blank zMonitorDir property with completed file property also
+            #  causes havoc so keep popping until reach line starting /
+            while not dirFiles[0] :
+              dirFiles.pop(0)
+            try:
+                if dirFiles[0].rstrip('/') not in dirRegex.keys():
+                    continue
+            except:
+                continue
+
+            # dirFiles[0] is zMonitorDir
+            dirName = dirFiles[0].rstrip('/')
+            log.debug('dirName is %s ' % (dirName))
+            # Lose the zero'th element and the rest is short filenames, one per line
+            dirFiles.pop(0)
+	    dir_id = prepId(dirName)
+	    # Add an Object Map for this directory 
+	    # Use prepId to ensure id is unique and doesn't include any dodgy characters like /
+	    # om = self.objectMap() inherits modname and compname (null) from plugin
+	    om = self.objectMap()
+	    om.id = dir_id
+	    om.dirName = dirName
+	    for k,v in om.items():
+		log.debug('dir om key is %s and value is %s' % (k, v))
+	    rm.append(om)
+	    # For this directory, create a map for associated files, passing this dir_id as part of compname
+	    fm = (self.getFileMap( device, dirFiles, dirRegex, dirName, 'dirs/%s' % dir_id, log))
+	    log.debug('dir %s has fm  %s \n fm relname is %s and fm compname is %s ' % (om.id, fm, fm.relname, fm.compname))
+	    maps['files'].append(fm)
+
         if len(rm.maps) > 0:
             #log.info('Found matching dirs %s on %s \n dir relname is %s and dir compname is %s ' % (rm, device.id, rm.relname, rm.compname))
             pass
@@ -119,11 +159,6 @@ class DirFileMap(CommandPlugin):
 
         # Add the rm relationships to maps['dirs']
         maps['dirs'].append(rm)
-        # Next 4 lines are old code when dir_maps was created as a list rather than using rm=self.relMap()
-        #maps['dirs'].append(RelationshipMap(
-        #    relname = 'dirs',
-        #    modname = 'ZenPacks.community.DirFile.Dir',
-        #    objmaps = dir_maps))
 
         # Need this complicated setup with maps = collections.OrderedDict and the chain return
         #   to ensure that relationship maps are applied in the correct order.  Otherwise there tend
@@ -133,28 +168,21 @@ class DirFileMap(CommandPlugin):
     def getFileMap(self, device, files_string, dirRegex, dirMatch, compname, log):
         #log.debug('files_string is %s , dirRegex is %s , compname is %s ' % (files_string, dirRegex, compname))
         file_maps = []
-        for file in files_string.split('\n'):
-            # Split out the filename part and the directory part
-            f = file.split('/')[-1]
-            d = '/'.join(file.split('/')[:-1])
-            # Only consider creating a file map if the directory matches the dirMatch parameter
-            if d == dirMatch:
-                for k, v in dirRegex.items():
-                    if d == k:                # got directory match
-                        if re.search( v, f):   # check the regex
-                            # Got a regex match against filename f
-                            file_id = prepId(f)
-                            # Don't want to inherit compname or modname from plugin as we want to set this expicitly
-                            # Use ObjectMap rather than om=self.objectMap()
-                            file_maps.append(ObjectMap(data = {
-                                'id': file_id,
-                                'fileName' : f,
-                                'fileDirName' : d,
-                                'fileRegex' : v,
-                                }))
-                            log.info('Found dir %s and file %s match' % (d, f))
-                            # Get out of for k, v in dirRegex.items(): loop - don't care if matches on >1 regex
-                            break
+        for f in files_string:
+            # dirMatch is directory name
+            # regex is dirRegex[dirMatch]
+            if re.search(dirRegex[dirMatch], f):
+		# Got a regex match against filename f
+		file_id = prepId(f)
+		# Don't want to inherit compname or modname from plugin as we want to set this expicitly
+		# Use ObjectMap rather than om=self.objectMap()
+		file_maps.append(ObjectMap(data = {
+		    'id': file_id,
+		    'fileName' : f,
+		    'fileDirName' : dirMatch,
+		    'fileRegex' : dirRegex[dirMatch],
+		    }))
+		log.info('Found dir %s and file %s match' % (dirMatch, f))
 
         # Return file_maps relationship map with compname passed as parameter to this method
         # Again - don't want to inherit relname, modname or compname for this relationship as we want to set them explicitly

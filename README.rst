@@ -11,7 +11,11 @@ data collection.
 
 Directories and files are specified as zProperties.
 
-This version of the ZenPack uses zenpacklib and is version 1.0.0 in the master git branch.
+Version 1.0.0 in the master branch uses zenpacklib and COMMAND bash scripts for both
+modeling and performance data collection.
+
+Version 1.0.3 in the evalCommand branch modifies the modeler and __init__.py to
+permit the use of TALES expressions in the command parameter of the command modeler.
 
 This ZenPack is not intended as production-level code.  It provides detailed examples and
 explanations of ZenPack building techniques.  It is designed to have extremely trivial setup
@@ -89,6 +93,9 @@ There is no device-level modeler.
 
 Note that, as shipped, the DirFileMap modeler is restricted to searching directories under
 /opt/zenoss/local ; this is for performance reasons.
+
+With Version 1.0.3, the zMonitorDir properties are used to restrict the command run
+by the modeler and is *much* more efficient.
 
 
 Monitoring Templates
@@ -269,6 +276,11 @@ Change History
    - Initial Release
 * 1.0.1
    - Initial Release for PythonCollector
+* 1.0.2
+   - With events added
+* 1.0.3
+   - Starts from 1.0.0 and modifies modeler plugin and __init__.py to
+     support TALES expressions in the command modeler plugin
 
 
 Screenshots
@@ -279,7 +291,7 @@ See the screenshots directory.
 
 .. External References Below. Nothing Below This Line Should Be Rendered
 
-.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/master/dist/ZenPacks.community.DirFile-1.0.0-py2.7.egg?raw=true
+.. _Latest Package for Python 2.7: https://github.com/ZenossDevGuide/ZenPacks.community.DirFile/blob/evalCommand/dist/ZenPacks.community.DirFile-1.0.3-py2.7.egg?raw=true
 
 Acknowledgements
 ================
