@@ -41,7 +41,7 @@ class DirFileMap(CommandPlugin):
 
     # The command to run.
     # For each zMonitorDir parameter, check whether dir exists and get
-    #    all files imeediately under that directory, chopping off directory prefix
+    #    all files imediately under that directory, chopping off directory prefix
 
     # Note that we're using TALES in the command. Normally that's NOT
     # possible. Check out the monkeypatch of CollectorClient.__init__ method
