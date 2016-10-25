@@ -208,9 +208,9 @@ Events
 
 The */DirFile* event class is shipped as part of objects.xml. The /DirFile event class has a
 transform that, for events with eventKey == "FileStatsPythonDeviceData", populates user-defined
-event attributes of fileDirName and fileDirRegex.
+event attributes of fileDirName and fileRegex.
 
-Version 1.0.2 in the events git branch includes definitions of user-supplied event attributes,
+Version 1.0.2, in the events git branch, includes definitions of user-supplied event attributes,
 fileDirName and fileRegex in zep.json in the zep directory.  These fields can be used as Event
 Console fields and can also be used as criteria for creating Triggers, provided the patch for
 https://jira.zenoss.com/browse/ZEN-7910 is applied.  This appears to be present in both Zenoss 4
