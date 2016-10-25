@@ -206,7 +206,36 @@ The FileLsDiskUsed template uses a customised parser to allocate correct ls valu
 Events
 ------
 
-The */DirFile* event class is shipped as part of objects.xml.
+The */DirFile* event class is shipped as part of objects.xml. The /DirFile event class has a
+transform that, for events with eventKey == "FileStatsPythonDeviceData", populates user-defined
+event attributes of fileDirName and fileDirRegex.
+
+Version 1.0.2 in the events git branch includes definitions of user-supplied event attributes,
+fileDirName and fileRegex in zep.json in the zep directory.  These fields can be used as Event
+Console fields and can also be used as criteria for creating Triggers, provided the patch for
+https://jira.zenoss.com/browse/ZEN-7910 is applied.  This appears to be present in both Zenoss 4
+SUP 671 and in Zenoss 5.0.7.
+
+Also in the zep directory is an actions.json file defining a trigger which includes a check
+on the fileDirName field, and a notification driven by the trigger.  Note that unless a fix to
+https://jira.zenoss.com/browse/ZEN-15367 is installed, then no default notification fields will be
+populated.  This fix modified $ZENHOME/Products/ZenModel/actions.py, around line 239 such that::
+
+updates[k] = data.get(k)
+
+becomes::
+
+if data.get(k) is not None:
+    updates[k] = data[k]
+
+If these changes are made to actions.py then restart Zenoss.  Note that if this fix is required
+to be made manually in a Zenoss 5.x system, then actions.py must be modified in the Zope
+container and a snapshot saved with this modification.  A copy of a working
+$ZENHOME/Products/ZenModel/actions.py is provided in the libexec of this ZenPack, as 
+actions.py_with_ZEN-15367_fix . The manual fix is still required with Zenoss 4, SUP 671 and
+with Zenoss 5.1.7.
+
+
 
 
 GUI modifications
@@ -280,7 +309,7 @@ The DirFile zProperties used for testing were::
 Requirements & Dependencies
 ===========================
 
-* Zenoss Versions Supported:  4.x
+* Zenoss Versions Supported:  4.x, 5.x
 * External Dependencies: 
 
   - The zenpacklib package that this ZenPack is built on, requires PyYAML.  This is installed as standard with Zenoss 5 and with Zenoss 4 with SP457.
